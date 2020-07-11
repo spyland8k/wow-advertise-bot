@@ -3,7 +3,6 @@ require('dotenv').config();
 
 const Discord = require('discord.js');
 const client = new Discord.Client();
-const embed = new Discord.MessageEmbed();
 
 client.login(process.env.DISCORD_TOKEN);
 
@@ -13,10 +12,6 @@ client.on('ready', async () => {
 
 client.on('message', async message => {
     // Command line
-    if(embed.title === 'Need Dungeon Booster!'){
-        console.log("New post!");
-    }
-
     if(message.content === 'Need'){
         console.log(message.content + ' catched');
 
@@ -43,8 +38,6 @@ client.on('message', async message => {
     } else if(message.content === 'Dungeon'){
         console.log(message.content + ' catched');
     }
-
-    
 });
 
 
