@@ -2,8 +2,9 @@
 require('dotenv').config();
 
 const Discord = require('discord.js');
-const webhook = require('webhook-discord');
-const client = new Discord.Client();
+const client = new Discord.Client({
+    disableEveryone: true
+});
 const boosterCut = 20;
 // webhook messages drops here (channel id)
 const hookForm = "731543421340221521";
@@ -67,6 +68,7 @@ function modifyEmbed(embed) {
 
 client.on('ready', () => {
     console.log(`Logged in as ${client.user.tag}!`);
+    console.log(`Ready to serve on ${client.guilds.size} servers, for ${client.users.size} users.`);
 });
 
 client.on('message', async message => {
@@ -85,18 +87,27 @@ client.on('message', async message => {
     }
 });
 
-client.on('message', async message =>{
+client.fetchWebhook(process.env.webhookID, process.env.webhook_Token){
+
+}
+
+client.on('message', message =>{
     // TODO Prefix command
     if (message.content === 'Need Dungeon Booster!') {
-        const filter = (reaction, user) => {
+        const filter1 = (reaction, user) => {
             return ['✅', '❌'].includes(reaction.emoji.name) && user.id === message.author.id;
+        };
+
+        const filter2 = (reaction, user) => {
+            return reaction.emoji.name === '✅', '❌' && user.id === message.author.id;
         };
 
         console.log(message.content + ' catched');
 
         message.react('✅').then(() => message.react('❌'));
 
-        const collector = message.createReactionCollector(filter, { time: 15000 });
+        // time cooldown for advertise
+        const collector = message.createReactionCollector(filter2, { time: 15000 });
 
         collector.on('collect', (reaction, user) => {
             console.log(`Collected ${reaction.emoji.name} from ${user.tag}`);
