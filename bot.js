@@ -2,20 +2,21 @@
 require('dotenv').config();
 
 const Discord = require('discord.js');
-const client = new Discord.Client({
-    disableEveryone: true
-});
+const config = require('./config.json');
+const client = new Discord.Client();
 const boosterCut = 20;
 // webhook messages drops here (channel id)
 const hookForm = "731543421340221521";
 // routing to booster channel
 const webhookToChannelId = "731232365388759111";
 
+client.login(process.env.DISCORD_TOKEN);
+
 function getRandomArbitrary(min, max) {
     return Math.random() * (max - min) + min;
 }
 
-async function getChannelbyId(channelId) {
+function getChannelbyId(channelId) {
     return client.channels.cache.get(channelId);
 }
 
@@ -68,12 +69,11 @@ function modifyEmbed(embed) {
 
 client.on('ready', () => {
     console.log(`Logged in as ${client.user.tag}!`);
-    console.log(`Ready to serve on ${client.guilds.size} servers, for ${client.users.size} users.`);
 });
 
 client.on('message', async message => {
     // Is that message comes from webhook
-    if(message.webhookID){
+    if (message.webhookID) {
         // Get webhook post
         var msg = (await message.fetch());
         // Get embeds on post
@@ -83,15 +83,16 @@ client.on('message', async message => {
         // Get channel with by Id
         var messageToChannel = getChannelbyId(webhookToChannelId);
         // Send, new modified message to the specific channel
-        messageToChannel.send(newEmbed);
+        try {
+            messageToChannel.send(newEmbed);
+        } catch (error) {
+            console.log(newEmbed + " " + error);   
+        }
     }
 });
 
-client.fetchWebhook(process.env.webhookID, process.env.webhook_Token){
-
-}
-
-client.on('message', message =>{
+/*
+client.on('message', message => {
     // TODO Prefix command
     if (message.content === 'Need Dungeon Booster!') {
         const filter1 = (reaction, user) => {
@@ -118,10 +119,10 @@ client.on('message', message =>{
         });
 
     }
-});
+});*/
 
-client.on('messageReactionAdd', (reaction, user) =>{
-    if (reaction.emoji.name === '✅'){
+client.on('messageReactionAdd', (reaction, user) => {
+    if (reaction.emoji.name === '✅') {
         console.log(reaction.users);
     }
 });
@@ -131,5 +132,3 @@ client.on('messageReactionRemove', (reaction, user) => {
         console.log(reaction.users);
     }
 });
-
-client.login(process.env.DISCORD_TOKEN);
