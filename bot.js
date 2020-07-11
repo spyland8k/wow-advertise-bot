@@ -10,22 +10,15 @@ const hookForm = "731543421340221521";
 // routing to booster channel
 const webhookToChannelId = "731232365388759111";
 
-client.on('ready', () => {
-    console.log(`Logged in as ${client.user.tag}!`);
-});
-
 function getRandomArbitrary(min, max) {
     return Math.random() * (max - min) + min;
 }
 
-function getChannelbyId(channelId) {
+async function getChannelbyId(channelId) {
     return client.channels.cache.get(channelId);
 }
 
-function modifyEmbed(message){
-    let msg = (await message.fetch());
-    let embed = new Discord.MessageEmbed(msg.embeds[0]);
-
+function modifyEmbed(embed) {
     /*// What are those coming from webhook
     console.log(embed.title + " embed message");
     let i = 0;
@@ -34,12 +27,13 @@ function modifyEmbed(message){
         i++;
     });*/
 
-    // Modify hooked message
-    let newEmbed = new Discord.MessageEmbed()
+    // Modify hooked message from webhook channel
+    var newEmbed = new Discord.MessageEmbed()
         .setColor('#0099ff')
         .setTitle(embed.title)
         //.setDescription('Some description here')
         .setThumbnail('https://bnetcmsus-a.akamaihd.net/cms/template_resource/fh/FHSCSCG9CXOC1462229977849.png')
+        // TODO Generic list
         .addFields(
             // Discord Tag
             //{ name: embed.fields[0].name, value: embed.fields[0].value, inline: true },
@@ -67,67 +61,64 @@ function modifyEmbed(message){
         //.addField('Inline field title', 'Some value here', true)
         //.setImage('https://i.imgur.com/wSTFkRM.png')
         .setTimestamp()
-        .setFooter('BoostId: ' + message.id, 'https://bnetcmsus-a.akamaihd.net/cms/template_resource/fh/FHSCSCG9CXOC1462229977849.png');
+        .setFooter('BoostId: ', 'https://bnetcmsus-a.akamaihd.net/cms/template_resource/fh/FHSCSCG9CXOC1462229977849.png');
     return newEmbed
 }
 
+client.on('ready', () => {
+    console.log(`Logged in as ${client.user.tag}!`);
+});
+
 client.on('message', async message => {
-
-    const filter = (reaction, user) => {
-        return ['✅', '❌'].includes(reaction.emoji.name) && user.id === message.author.id;
-    };
-
-    // is that message comes from webhook
-    // 731232365388759111
+    // Is that message comes from webhook
     if(message.webhookID){
-        //get webhook post
-        var newEmbed = modifyEmbed(message);
-        // get channel
+        // Get webhook post
+        var msg = (await message.fetch());
+        // Get embeds on post
+        var embed = new Discord.MessageEmbed(msg.embeds[0]);
+        // modify embeds for advertise
+        var newEmbed = modifyEmbed(embed);
+        // Get channel with by Id
         var messageToChannel = getChannelbyId(webhookToChannelId);
-        // Send, Created new modified message to webhookToChannelId
+        // Send, new modified message to the specific channel
         messageToChannel.send(newEmbed);
-
-        msg.react('✅').then(() => message.react('❌'));
-
-        msg.awaitReactions(filter, { max: 1, time: 5000, errors: ['time'] })
-            .then(collected => {
-                const reaction = collected.first();
-
-                if (reaction.emoji.name === '✅') {
-                    msg.reply('you reacted with a thumbs up.');
-                } else {
-                    msg.reply('you reacted with a thumbs down.');
-                }
-            })
-            .catch(collected => {
-                msg.reply('you reacted with neither a thumbs up, nor a thumbs down.');
-            });
     }
+});
 
-    // Command line
-    if(message.content === 'Need'){
+client.on('message', async message =>{
+    // TODO Prefix command
+    if (message.content === 'Need Dungeon Booster!') {
+        const filter = (reaction, user) => {
+            return ['✅', '❌'].includes(reaction.emoji.name) && user.id === message.author.id;
+        };
+
         console.log(message.content + ' catched');
 
         message.react('✅').then(() => message.react('❌'));
 
-        message.awaitReactions(filter, { max: 1, time: 10000, errors: ['time'] })
-            .then(collected => {
-                const reaction = collected.first();
+        const collector = message.createReactionCollector(filter, { time: 15000 });
 
-                if (reaction.emoji.name === '✅') {
-                    message.reply('you reacted with a thumbs up.');
-                } else {
-                    message.reply('you reacted with a thumbs down.');
-                }
-            })
-            .catch(collected => {
-                message.reply('you reacted with neither a thumbs up, nor a thumbs down.');
-            });
+        collector.on('collect', (reaction, user) => {
+            console.log(`Collected ${reaction.emoji.name} from ${user.tag}`);
+        });
 
-    } else if(message.content === 'Dungeon'){
-        console.log(message.content + ' catched');
+        collector.on('end', collected => {
+            console.log(`Collected ${collected.size} items`);
+        });
+
     }
 });
 
+client.on('messageReactionAdd', (reaction, user) =>{
+    if (reaction.emoji.name === '✅'){
+        console.log(reaction.users);
+    }
+});
+
+client.on('messageReactionRemove', (reaction, user) => {
+    if (reaction.emoji.name === '✅') {
+        console.log(reaction.users);
+    }
+});
 
 client.login(process.env.DISCORD_TOKEN);
