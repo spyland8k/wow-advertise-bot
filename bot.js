@@ -3,12 +3,12 @@ require('dotenv').config();
 
 const Discord = require('discord.js');
 const config = require('./config.json');
-const client = new Discord.Client();
+const client = new Discord.Client({ partials: ['MESSAGE', 'CHANNEL', 'REACTION'] });
 const boosterCut = 20;
 // webhook messages drops here (channel id)
 const hookForm = "731543421340221521";
 // routing to booster channel
-const webhookToChannelId = "731232365388759111";
+const webhookToChannelId = "731523810662154311";
 
 client.login(process.env.DISCORD_TOKEN);
 
@@ -71,64 +71,123 @@ client.on('ready', () => {
     console.log(`Logged in as ${client.user.tag}!`);
 });
 
+// Webhook to embed message
 client.on('message', async message => {
-    // Is that message comes from webhook
-    if (message.webhookID) {
-        // Get webhook post
-        var msg = (await message.fetch());
-        // Get embeds on post
-        var embed = new Discord.MessageEmbed(msg.embeds[0]);
-        // modify embeds for advertise
-        var newEmbed = modifyEmbed(embed);
-        // Get channel with by Id
-        var messageToChannel = getChannelbyId(webhookToChannelId);
-        // Send, new modified message to the specific channel
-        try {
-            messageToChannel.send(newEmbed);
-        } catch (error) {
-            console.log(newEmbed + " " + error);   
+    // webhook-1 channel
+    if (message.channel.id === hookForm) {
+        // Is that message comes from webhook
+        if (message.webhookID) {
+            // Get webhook post
+            var msg = (await message.fetch());
+            // Get embeds on post
+            var embed = new Discord.MessageEmbed(msg.embeds[0]);
+            // modify embeds for advertise
+            var newEmbed = modifyEmbed(embed);
+            // Get channel with by Id
+            //var messageToChannel = getChannelbyId(webhookToChannelId);
+            // Send, new modified message to the specific channel
+            try {
+                //messageToChannel.send(newEmbed);
+                client.channels.cache.get(webhookToChannelId).send(newEmbed);
+            } catch (error) {
+                console.log(newEmbed + " " + error);
+            }
         }
     }
 });
 
-/*
+// Add react to Embed Message
 client.on('message', message => {
-    // TODO Prefix command
-    if (message.content === 'Need Dungeon Booster!') {
-        const filter1 = (reaction, user) => {
-            return ['✅', '❌'].includes(reaction.emoji.name) && user.id === message.author.id;
-        };
-
-        const filter2 = (reaction, user) => {
-            return reaction.emoji.name === '✅', '❌' && user.id === message.author.id;
-        };
-
-        console.log(message.content + ' catched');
-
-        message.react('✅').then(() => message.react('❌'));
-
-        // time cooldown for advertise
-        const collector = message.createReactionCollector(filter2, { time: 15000 });
-
-        collector.on('collect', (reaction, user) => {
-            console.log(`Collected ${reaction.emoji.name} from ${user.tag}`);
-        });
-
-        collector.on('end', collected => {
-            console.log(`Collected ${collected.size} items`);
-        });
-
-    }
-});*/
-
-client.on('messageReactionAdd', (reaction, user) => {
-    if (reaction.emoji.name === '✅') {
-        console.log(reaction.users);
+    // Add react only specific channel
+    if (message.channel.id === webhookToChannelId) {
+        // Modify footer of message for boostId
+        message.edit(message.embeds[0].setFooter('BoostId: ' + message.id, 'https://bnetcmsus-a.akamaihd.net/cms/template_resource/fh/FHSCSCG9CXOC1462229977849.png'));
+        // Add react to the message
+        message.react('✅').then(() =>
+            message.react('731617839370469446'),
+            message.react('731617839290515516'),
+            message.react('731617839596961832'));
     }
 });
 
-client.on('messageReactionRemove', (reaction, user) => {
-    if (reaction.emoji.name === '✅') {
-        console.log(reaction.users);
+// ReactionAdd Event Listener
+client.on('messageReactionAdd', async (reaction, user) => {
+    const filter = (reaction, user) => {
+        return ['731617839370469446', '731617839290515516', '731617839596961832']
+            .includes(reaction.emoji.name) && user.id === message.author.id;
+    };
+
+    if (reaction.partial) {
+        console.log(`Reaction is partial: ${reaction.partial}`);
+        // If the message this reaction belongs to was removed the fetching 
+        // might result in an API error, which we need to handle
+        try {
+            await reaction.fetch();
+        } catch (error) {
+            console.log('Something went wrong when fetching the message: ', error);
+            // Return as `reaction.message.author` may be undefined/null
+            return;
+        }
     }
+
+    // Now the message has been cached and is fully available
+    if(reaction.count > 1){
+        //var tmpUser = (await reaction.users.fetch()).get(1);
+        //var tmpUser2 = (await reaction.users.fetch());
+        //console.log("***tmpUser2: " + tmpUser2.map(u => u.toString()));
+        //console.log("***tmpUser3: " + tmpUser3.username); 
+        var tmpUser = (await reaction.users.fetch(10, 1, 20)).first();
+        
+        // DPS Boosters
+        if (reaction.emoji.id === '731617839370469446'){
+            console.log(`DONE! BoostId= ${reaction.message.id} - @${tmpUser.username}#${tmpUser.discriminator} user got ${reaction.emoji.name} job!`);
+        } // Tank Boosters
+        else if (reaction.emoji.id === '731617839290515516'){
+            console.log(`DONE! BoostId= ${reaction.message.id} - @${tmpUser.username}#${tmpUser.discriminator} user got ${reaction.emoji.name} job!`);
+        } // Healer Boosters
+        else if (reaction.emoji.id === '731617839596961832') {
+            console.log(`DONE! BoostId= ${reaction.message.id} - @${tmpUser.username}#${tmpUser.discriminator} user got ${reaction.emoji.name} job!`);
+        } 
+        else if (reaction.emoji.name === '✅') {
+            console.log(`ADVERTISE ${reaction.message.id} CLOSED! `)
+        }
+    }
+});
+
+client.on('messageReactionRemove', async (reaction, user) => {
+    if (reaction.partial) {
+        console.log(`Reaction is partial: ${reaction.partial}`);
+        // If the message this reaction belongs to was removed the fetching 
+        // might result in an API error, which we need to handle
+        try {
+            await reaction.fetch();
+        } catch (error) {
+            console.log('Something went wrong when fetching the message: ', error);
+            // Return as `reaction.message.author` may be undefined/null
+            return;
+        }
+    }
+    /*
+    // Now the message has been cached and is fully available
+    if (reaction.count >= 1) {
+        //var tmpUser = (await reaction.users.fetch()).get(1);
+        //var tmpUser2 = (await reaction.users.fetch());
+        //console.log("***tmpUser2: " + tmpUser2.map(u => u.toString()));
+        //console.log("***tmpUser3: " + tmpUser3.username); 
+        var tmpUser = (await reaction.users.fetch(10, 1, 20)).first();
+
+        // DPS Boosters
+        if (reaction.emoji.id === '731617839370469446') {
+            console.log(`REMOVED! BoostId= ${reaction.message.id} - @${tmpUser.username}#${tmpUser.discriminator} user got ${reaction.emoji.name} job!`);
+        } // Tank Boosters
+        else if (reaction.emoji.id === '731617839290515516') {
+            console.log(`REMOVED! BoostId= ${reaction.message.id} - @${tmpUser.username}#${tmpUser.discriminator} user got ${reaction.emoji.name} job!`);
+        } // Healer Boosters
+        else if (reaction.emoji.id === '731617839596961832') {
+            console.log(`REMOVED! BoostId= ${reaction.message.id} - @${tmpUser.username}#${tmpUser.discriminator} user got ${reaction.emoji.name} job!`);
+        }
+        else if (reaction.emoji.name === '✅') {
+            console.log(`ADVERTISE ${reaction.message.id} CLOSED! `)
+        }
+    }*/
 });
