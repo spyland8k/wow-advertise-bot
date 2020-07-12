@@ -104,6 +104,7 @@ client.on('message', message => {
     if (message.channel.id === webhookToChannelId) {
         // Modify footer of message for boostId
         message.edit(message.embeds[0].setFooter('BoostId: ' + message.id, 'https://bnetcmsus-a.akamaihd.net/cms/template_resource/fh/FHSCSCG9CXOC1462229977849.png'));
+
         // Add react to the message
         message.react('✅').then(() =>
             message.react('731617839290515516'), // DPS
@@ -112,17 +113,26 @@ client.on('message', message => {
     }
 });
 
-
-
 var needDpsBooster = true;
 var dpsBoosters = Array();
+var dpsUsers = Array();
 var tankBoosters = Array();
+var tankUsers = Array();
 var healerBoosters = Array();
+var healerUsers = Array();
 
 // ReactionAdd Event Listener
 client.on('messageReactionAdd', async (reaction, user) => {
-    const filter = (reaction, user) => {
-        return ['731617839290515516', '731617839596961832', '731617839370469446']
+    const filter1 = (reaction, user) => {
+        return ['731617839290515516']
+            .includes(reaction.emoji.name) && user.id === message.author.id;
+    };
+    const filter2 = (reaction, user) => {
+        return ['731617839596961832']
+            .includes(reaction.emoji.name) && user.id === message.author.id;
+    };
+    const filter3 = (reaction, user) => {
+        return ['731617839370469446']
             .includes(reaction.emoji.name) && user.id === message.author.id;
     };
 
@@ -138,61 +148,115 @@ client.on('messageReactionAdd', async (reaction, user) => {
             return;
         }
     }
+    //get all users who reacted classes
+    //var reactedDPSMember = (await reaction.users.fetch()).array();
+    //var reactedTANKMember = (await reaction.users.fetch()).array();
+    //var reactedHEALERMember = (await reaction.users.fetch()).array();
 
-    // Now the message has been cached and is fully available
-    if(reaction.count > 1){
-        //var tmpUser = (await reaction.users.fetch()).get(1);
-        //var tmpUser2 = (await reaction.users.fetch());
-        //console.log("***tmpUser2: " + tmpUser2.map(u => u.toString()));
-        //console.log("***tmpUser3: " + tmpUser3.username); 
-        var allUsers = (await reaction.users.fetch(10, 1, 20)).first();
+    // DPS Boosters
+    if (reaction.emoji.id === '731617839290515516' && !user.bot) {
+        if (!tankUsers.includes(user) && !healerUsers.includes(user)) {
+            if (!dpsUsers.includes(user)) {
+                // add booster to dpsUsers
+                dpsUsers.push(user);
+                //console.log(`Added to dpsUsers ${user.username}`);
 
-        // DPS Boosters
-        if (reaction.emoji.id === '731617839290515516'){
-            dpsBoosters.push(tmpUser);
+                console.log('----------ALL DPS USERS----------');
+                let i = 0;
+                // Print all of dpsUsers registered queue
+                dpsUsers.forEach(element => {
+                    console.log(`${i}- DPS USER: ${element.username}#${element.discriminator}`);
+                    i++;
+                });
+                console.log('----------------------------------');
 
-            var tmpMsg = (await reaction.message.fetch()).embeds[0];
-            
-            //
-            if (tmpMsg.fields.includes('<:dps:731617839290515516>')){
-                console.log("DPS ALREADY HAVE");
-                needDpsBooster = false;
+                // Store all dpsBoosters players
+                dpsBoosters.push(dpsUsers[0]);
+
+                if (dpsBoosters.length == 1) {
+                    var tmpUser = dpsBoosters[0];
+
+                    let tmpMsg = (await reaction.message.fetch()).embeds[0];
+                    let tmpEmbed = new Discord.MessageEmbed(tmpMsg);
+
+                    tmpEmbed.addFields(
+                        // DPS BOOSTER EMBED FIELD
+                        { name: '<:dps:731617839290515516>', value: `<@${tmpUser.id}>`, inline: true }
+                    );
+                    reaction.message.edit(tmpEmbed);
+                    console.log(`DONE! BoostId= ${reaction.message.id} - @${tmpUser.username}#${tmpUser.discriminator} user got ${reaction.emoji.name} job!`);
+                }
             }
+        }
+    } // Tank Boosters
+    else if (reaction.emoji.id === '731617839596961832' && !user.bot) {
+        if (!dpsUsers.includes(user) && !healerUsers.includes(user)) {
+            if (!tankUsers.includes(user)) {
+                // add booster to tankUsers
+                tankUsers.push(user);
+                //console.log(`Added to tankUsers ${user.username}`);
 
-            if(needDpsBooster){
-                let tmpEmbed = new Discord.MessageEmbed(tmpMsg);
+                console.log('----------ALL TANK USERS----------');
+                let i = 0;
+                // Print all of tankUsers registered queue
+                tankUsers.forEach(element => {
+                    console.log(`${i}- TANK USER: ${element.username}#${element.discriminator}`);
+                    i++;
+                });
+                console.log('----------------------------------');
 
-                tmpEmbed.addFields(
-                    // DPS BOOSTER EMBED FIELD
-                    { name: '<:dps:731617839290515516>', value: `<@${tmpUser.id}>`, inline: true }
-                );
-                reaction.message.edit(tmpEmbed);
-                console.log(`DONE! BoostId= ${reaction.message.id} - @${tmpUser.username}#${tmpUser.discriminator} user got ${reaction.emoji.name} job!`);
+                // Store all tankBoosters players
+                tankBoosters.push(tankUsers[0]);
+
+                if (dpsBoosters.length == 1) {
+                    var tmpUser = tankBoosters[0];
+
+                    let tmpMsg = (await reaction.message.fetch()).embeds[0];
+                    let tmpEmbed = new Discord.MessageEmbed(tmpMsg);
+
+                    tmpEmbed.addFields(
+                        // TANK BOOSTER EMBED FIELD
+                        { name: '<:tank:731617839596961832>', value: `<@${tmpUser.id}>`, inline: true }
+                    );
+                    reaction.message.edit(tmpEmbed);
+                    console.log(`DONE! BoostId= ${reaction.message.id} - @${tmpUser.username}#${tmpUser.discriminator} user got ${reaction.emoji.name} job!`);
+                }
             }
-        } // Tank Boosters
-        else if (reaction.emoji.id === '731617839596961832'){
-            let tmpMsg = (await reaction.message.fetch()).embeds[0];
-            let tmpEmbed = new Discord.MessageEmbed(tmpMsg);
-            tmpEmbed.addFields(
-                // TANK BOOSTER EMBED FIELD
-                {
-                    name: '<:tank:731617839596961832>', value: `<@${tmpUser.id}>`, inline: true }
-            );
-            reaction.message.edit(tmpEmbed);
-            console.log(`DONE! BoostId= ${reaction.message.id} - @${tmpUser.username}#${tmpUser.discriminator} user got ${reaction.emoji.name} job!`);
-        } // Healer Boosters
-        else if (reaction.emoji.id === '731617839370469446') {
-            let tmpMsg = (await reaction.message.fetch()).embeds[0];
-            let tmpEmbed = new Discord.MessageEmbed(tmpMsg);
-            tmpEmbed.addFields(
-                // HEALER BOOSTER EMBED FIELD
-                { name: '<:healer:731617839370469446>', value: `<@${tmpUser.id}>`, inline: true }
-            );
-            reaction.message.edit(tmpEmbed);
-            console.log(`DONE! BoostId= ${reaction.message.id} - @${tmpUser.username}#${tmpUser.discriminator} user got ${reaction.emoji.name} job!`);
-        } 
-        else if (reaction.emoji.name === '✅') {
-            console.log(`ADVERTISE ${reaction.message.id} CLOSED! `)
+        }
+    } // Healer Boosters
+    else if (reaction.emoji.id === '731617839370469446' && !user.bot) {
+        if (!dpsUsers.includes(user) && !tankUsers.includes(user)) {
+            if (!healerUsers.includes(user)) {
+                // add booster to healerUsers
+                healerUsers.push(user);
+                //console.log(`Added to healerUsers ${user.username}`);
+
+                console.log('--------ALL HEALER USERS---------');
+                let i = 0;
+                // Print all of healerUsers registered queue
+                healerUsers.forEach(element => {
+                    console.log(`${i}- HEALER USER: ${element.username}#${element.discriminator}`);
+                    i++;
+                });
+                console.log('----------------------------------');
+
+                // Store all dpsBoosters players
+                healerBoosters.push(healerUsers[0]);
+
+                if (healerBoosters.length == 1) {
+                    var tmpUser = healerBoosters[0];
+
+                    let tmpMsg = (await reaction.message.fetch()).embeds[0];
+                    let tmpEmbed = new Discord.MessageEmbed(tmpMsg);
+
+                    tmpEmbed.addFields(
+                        // DPS BOOSTER EMBED FIELD
+                        { name: '<:healer:731617839370469446>', value: `<@${tmpUser.id}>`, inline: true }
+                    );
+                    reaction.message.edit(tmpEmbed);
+                    console.log(`DONE! BoostId= ${reaction.message.id} - @${tmpUser.username}#${tmpUser.discriminator} user got ${reaction.emoji.name} job!`);
+                }
+            }
         }
     }
 });
@@ -210,27 +274,109 @@ client.on('messageReactionRemove', async (reaction, user) => {
             return;
         }
     }
-    /*
-    // Now the message has been cached and is fully available
-    if (reaction.count >= 1) {
-        //var tmpUser = (await reaction.users.fetch()).get(1);
-        //var tmpUser2 = (await reaction.users.fetch());
-        //console.log("***tmpUser2: " + tmpUser2.map(u => u.toString()));
-        //console.log("***tmpUser3: " + tmpUser3.username); 
-        var tmpUser = (await reaction.users.fetch(10, 1, 20)).first();
 
-        // DPS Boosters
-        if (reaction.emoji.id === '731617839370469446') {
-            console.log(`REMOVED! BoostId= ${reaction.message.id} - @${tmpUser.username}#${tmpUser.discriminator} user got ${reaction.emoji.name} job!`);
-        } // Tank Boosters
-        else if (reaction.emoji.id === '731617839290515516') {
-            console.log(`REMOVED! BoostId= ${reaction.message.id} - @${tmpUser.username}#${tmpUser.discriminator} user got ${reaction.emoji.name} job!`);
-        } // Healer Boosters
-        else if (reaction.emoji.id === '731617839596961832') {
-            console.log(`REMOVED! BoostId= ${reaction.message.id} - @${tmpUser.username}#${tmpUser.discriminator} user got ${reaction.emoji.name} job!`);
+    // DPS Boosters
+    if (reaction.emoji.id === '731617839290515516' && !user.bot) {
+        if (!dpsUsers.includes(user)) {
+            // add booster to dpsUsers
+            dpsUsers.push(user);
+            //console.log(`Added to dpsUsers ${user.username}`);
+
+            console.log('----------ALL DPS USERS----------');
+            let i = 0;
+            // Print all of dpsUsers registered queue
+            dpsUsers.forEach(element => {
+                console.log(`${i}- DPS USER: ${element.username}#${element.discriminator}`);
+                i++;
+            });
+            console.log('----------------------------------');
+
+            // Store all dpsBoosters players
+            dpsBoosters.push(dpsUsers[0]);
+
+            if (dpsBoosters.length == 1) {
+                var tmpUser = dpsBoosters[0];
+
+                let tmpMsg = (await reaction.message.fetch()).embeds[0];
+                let tmpEmbed = new Discord.MessageEmbed(tmpMsg);
+
+                tmpEmbed.addFields(
+                    // DPS BOOSTER EMBED FIELD
+                    { name: '<:dps:731617839290515516>', value: `<@${tmpUser.id}>`, inline: true }
+                );
+                reaction.message.edit(tmpEmbed);
+                console.log(`DONE! BoostId= ${reaction.message.id} - @${tmpUser.username}#${tmpUser.discriminator} user got ${reaction.emoji.name} job!`);
+            }
         }
-        else if (reaction.emoji.name === '✅') {
-            console.log(`ADVERTISE ${reaction.message.id} CLOSED! `)
+    } // Tank Boosters
+    else if (reaction.emoji.id === '731617839596961832' && !user.bot) {
+        if (!dpsUsers.includes(user) && !healerUsers.includes(user)) {
+            if (!tankUsers.includes(user)) {
+                // add booster to tankUsers
+                tankUsers.push(user);
+                //console.log(`Added to tankUsers ${user.username}`);
+
+                console.log('----------ALL TANK USERS----------');
+                let i = 0;
+                // Print all of tankUsers registered queue
+                tankUsers.forEach(element => {
+                    console.log(`${i}- TANK USER: ${element.username}#${element.discriminator}`);
+                    i++;
+                });
+                console.log('----------------------------------');
+
+                // Store all tankBoosters players
+                tankBoosters.push(tankUsers[0]);
+
+                if (dpsBoosters.length == 1) {
+                    var tmpUser = tankBoosters[0];
+
+                    let tmpMsg = (await reaction.message.fetch()).embeds[0];
+                    let tmpEmbed = new Discord.MessageEmbed(tmpMsg);
+
+                    tmpEmbed.addFields(
+                        // TANK BOOSTER EMBED FIELD
+                        { name: '<:tank:731617839596961832>', value: `<@${tmpUser.id}>`, inline: true }
+                    );
+                    reaction.message.edit(tmpEmbed);
+                    console.log(`DONE! BoostId= ${reaction.message.id} - @${tmpUser.username}#${tmpUser.discriminator} user got ${reaction.emoji.name} job!`);
+                }
+            }
         }
-    }*/
+    } // Healer Boosters
+    else if (reaction.emoji.id === '731617839370469446' && !user.bot) {
+        if (!dpsUsers.includes(user) && !tankUsers.includes(user)) {
+            if (!healerUsers.includes(user)) {
+                // add booster to healerUsers
+                healerUsers.push(user);
+                //console.log(`Added to healerUsers ${user.username}`);
+
+                console.log('--------ALL HEALER USERS---------');
+                let i = 0;
+                // Print all of healerUsers registered queue
+                healerUsers.forEach(element => {
+                    console.log(`${i}- HEALER USER: ${element.username}#${element.discriminator}`);
+                    i++;
+                });
+                console.log('----------------------------------');
+
+                // Store all dpsBoosters players
+                healerBoosters.push(healerUsers[0]);
+
+                if (healerBoosters.length == 1) {
+                    var tmpUser = healerBoosters[0];
+
+                    let tmpMsg = (await reaction.message.fetch()).embeds[0];
+                    let tmpEmbed = new Discord.MessageEmbed(tmpMsg);
+
+                    tmpEmbed.addFields(
+                        // DPS BOOSTER EMBED FIELD
+                        { name: '<:healer:731617839370469446>', value: `<@${tmpUser.id}>`, inline: true }
+                    );
+                    reaction.message.edit(tmpEmbed);
+                    console.log(`DONE! BoostId= ${reaction.message.id} - @${tmpUser.username}#${tmpUser.discriminator} user got ${reaction.emoji.name} job!`);
+                }
+            }
+        }
+    }
 });
