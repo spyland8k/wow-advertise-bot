@@ -116,27 +116,21 @@ client.on('message', message => {
 var needDpsBooster = true;
 var dpsBoosters = Array();
 var dpsUsers = Array();
+var dpsQueue = Array();
 var tankBoosters = Array();
 var tankUsers = Array();
+var tankQueue = Array();
 var healerBoosters = Array();
 var healerUsers = Array();
+var healerQueue = Array();
+
+async function redirection(reaction, user){
+    
+}
 
 // ReactionAdd Event Listener
 client.on('messageReactionAdd', async (reaction, user) => {
-    const filter1 = (reaction, user) => {
-        return ['731617839290515516']
-            .includes(reaction.emoji.name) && user.id === message.author.id;
-    };
-    const filter2 = (reaction, user) => {
-        return ['731617839596961832']
-            .includes(reaction.emoji.name) && user.id === message.author.id;
-    };
-    const filter3 = (reaction, user) => {
-        return ['731617839370469446']
-            .includes(reaction.emoji.name) && user.id === message.author.id;
-    };
-
-    if (reaction.partial) {
+     if (reaction.partial) {
         console.log(`Reaction is partial: ${reaction.partial}`);
         // If the message this reaction belongs to was removed the fetching 
         // might result in an API error, which we need to handle
@@ -148,17 +142,14 @@ client.on('messageReactionAdd', async (reaction, user) => {
             return;
         }
     }
-    //get all users who reacted classes
-    //var reactedDPSMember = (await reaction.users.fetch()).array();
-    //var reactedTANKMember = (await reaction.users.fetch()).array();
-    //var reactedHEALERMember = (await reaction.users.fetch()).array();
 
-        // DPS Boosters
+    // DPS Boosters
     if (reaction.emoji.id === '731617839290515516' && !user.bot) {
         if (!tankUsers.includes(user) && !healerUsers.includes(user)) {
             if (!dpsUsers.includes(user)) {
                 // add booster to dpsUsers
                 dpsUsers.push(user);
+
                 //console.log(`Added to dpsUsers ${user.username}`);
 
                 console.log('----------ALL DPS USERS----------');
@@ -185,12 +176,16 @@ client.on('messageReactionAdd', async (reaction, user) => {
                 }
             }
         }
+        else{
+            dpsQueue.push(user);
+        }
     }   // Tank Boosters
     else if (reaction.emoji.id === '731617839596961832' && !user.bot) {
         if (!dpsUsers.includes(user) && !healerUsers.includes(user)) {
             if (!tankUsers.includes(user)) {
                 // add booster to tankUsers
                 tankUsers.push(user);
+
                 //console.log(`Added to tankUsers ${user.username}`);
 
                 console.log('----------ALL TANK USERS----------');
@@ -205,7 +200,7 @@ client.on('messageReactionAdd', async (reaction, user) => {
                 // Store all tankBoosters players
                 tankBoosters.push(tankUsers[0]);
 
-                if (dpsBoosters.length == 1) {
+                if (tankBoosters.length == 1) {
                     let tmpMsg = (await reaction.message.fetch()).embeds[0];
                     let tmpEmbed = new Discord.MessageEmbed(tmpMsg);
 
@@ -217,12 +212,16 @@ client.on('messageReactionAdd', async (reaction, user) => {
                 }
             }
         }
+        else{
+            tankQueue.push(user);
+        }
     }  // Healer Boosters
     else if (reaction.emoji.id === '731617839370469446' && !user.bot) {
         if (!dpsUsers.includes(user) && !tankUsers.includes(user)) {
             if (!healerUsers.includes(user)) {
                 // add booster to healerUsers
                 healerUsers.push(user);
+
                 //console.log(`Added to healerUsers ${user.username}`);
 
                 console.log('--------ALL HEALER USERS---------');
@@ -249,11 +248,13 @@ client.on('messageReactionAdd', async (reaction, user) => {
                 }
             }
         }
+        else{
+            healerQueue.push(user);
+        }
     }
 });
 
 client.on('messageReactionRemove', async (reaction, user) => {
-    
     if (reaction.partial) {
         console.log(`Reaction is partial: ${reaction.partial}`);
         // If the message this reaction belongs to was removed the fetching 
