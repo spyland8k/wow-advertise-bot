@@ -153,7 +153,7 @@ client.on('messageReactionAdd', async (reaction, user) => {
     //var reactedTANKMember = (await reaction.users.fetch()).array();
     //var reactedHEALERMember = (await reaction.users.fetch()).array();
 
-    // DPS Boosters
+        // DPS Boosters
     if (reaction.emoji.id === '731617839290515516' && !user.bot) {
         if (!tankUsers.includes(user) && !healerUsers.includes(user)) {
             if (!dpsUsers.includes(user)) {
@@ -174,21 +174,18 @@ client.on('messageReactionAdd', async (reaction, user) => {
                 dpsBoosters.push(dpsUsers[0]);
 
                 if (dpsBoosters.length == 1) {
-                    var tmpUser = dpsBoosters[0];
-
                     let tmpMsg = (await reaction.message.fetch()).embeds[0];
                     let tmpEmbed = new Discord.MessageEmbed(tmpMsg);
-
-                    tmpEmbed.addFields(
-                        // DPS BOOSTER EMBED FIELD
-                        { name: '<:dps:731617839290515516>', value: `<@${tmpUser.id}>`, inline: true }
-                    );
+                    
+                    // modified embed message
+                    tmpEmbed.fields.push({ name: '<:dps:731617839290515516>', value: `<@${user.id}>`, inline: true });
+                    // send modified embed message
                     reaction.message.edit(tmpEmbed);
-                    console.log(`DONE! BoostId= ${reaction.message.id} - @${tmpUser.username}#${tmpUser.discriminator} user got ${reaction.emoji.name} job!`);
+                    console.log(`DONE! BoostId= ${reaction.message.id} - @${user.username}#${user.discriminator} user got ${reaction.emoji.name} job!`);
                 }
             }
         }
-    } // Tank Boosters
+    }   // Tank Boosters
     else if (reaction.emoji.id === '731617839596961832' && !user.bot) {
         if (!dpsUsers.includes(user) && !healerUsers.includes(user)) {
             if (!tankUsers.includes(user)) {
@@ -209,21 +206,18 @@ client.on('messageReactionAdd', async (reaction, user) => {
                 tankBoosters.push(tankUsers[0]);
 
                 if (dpsBoosters.length == 1) {
-                    var tmpUser = tankBoosters[0];
-
                     let tmpMsg = (await reaction.message.fetch()).embeds[0];
                     let tmpEmbed = new Discord.MessageEmbed(tmpMsg);
 
-                    tmpEmbed.addFields(
-                        // TANK BOOSTER EMBED FIELD
-                        { name: '<:tank:731617839596961832>', value: `<@${tmpUser.id}>`, inline: true }
-                    );
+                    // modified embed message
+                    tmpEmbed.fields.push({ name: '<:tank:731617839596961832>', value: `<@${user.id}>`, inline: true });
+
                     reaction.message.edit(tmpEmbed);
-                    console.log(`DONE! BoostId= ${reaction.message.id} - @${tmpUser.username}#${tmpUser.discriminator} user got ${reaction.emoji.name} job!`);
+                    console.log(`DONE! BoostId= ${reaction.message.id} - @${user.username}#${user.discriminator} user got ${reaction.emoji.name} job!`);
                 }
             }
         }
-    } // Healer Boosters
+    }  // Healer Boosters
     else if (reaction.emoji.id === '731617839370469446' && !user.bot) {
         if (!dpsUsers.includes(user) && !tankUsers.includes(user)) {
             if (!healerUsers.includes(user)) {
@@ -244,17 +238,14 @@ client.on('messageReactionAdd', async (reaction, user) => {
                 healerBoosters.push(healerUsers[0]);
 
                 if (healerBoosters.length == 1) {
-                    var tmpUser = healerBoosters[0];
-
                     let tmpMsg = (await reaction.message.fetch()).embeds[0];
                     let tmpEmbed = new Discord.MessageEmbed(tmpMsg);
+                    
+                    // modified embed message
+                    tmpEmbed.fields.push({ name: '<:healer:731617839370469446>', value: `<@${user.id}>`, inline: true });
 
-                    tmpEmbed.addFields(
-                        // DPS BOOSTER EMBED FIELD
-                        { name: '<:healer:731617839370469446>', value: `<@${tmpUser.id}>`, inline: true }
-                    );
                     reaction.message.edit(tmpEmbed);
-                    console.log(`DONE! BoostId= ${reaction.message.id} - @${tmpUser.username}#${tmpUser.discriminator} user got ${reaction.emoji.name} job!`);
+                    console.log(`DONE! BoostId= ${reaction.message.id} - @${user.username}#${user.discriminator} user got ${reaction.emoji.name} job!`);
                 }
             }
         }
@@ -262,6 +253,7 @@ client.on('messageReactionAdd', async (reaction, user) => {
 });
 
 client.on('messageReactionRemove', async (reaction, user) => {
+    
     if (reaction.partial) {
         console.log(`Reaction is partial: ${reaction.partial}`);
         // If the message this reaction belongs to was removed the fetching 
@@ -277,10 +269,15 @@ client.on('messageReactionRemove', async (reaction, user) => {
 
     // DPS Boosters
     if (reaction.emoji.id === '731617839290515516' && !user.bot) {
-        if (!dpsUsers.includes(user)) {
-            // add booster to dpsUsers
-            dpsUsers.push(user);
-            //console.log(`Added to dpsUsers ${user.username}`);
+        if (dpsUsers.includes(user)) {
+            // pop booster from dpsUsers
+            try {
+                let deletedUser = dpsUsers.shift();
+                dpsBoosters.pop();
+                console.log(`Deleted from dpsUsers and dpsBoosters ${deletedUser.username}`);
+            } catch (error) {
+                console.log(error + " DPS User cannot deleted!")
+            }
 
             console.log('----------ALL DPS USERS----------');
             let i = 0;
@@ -291,91 +288,97 @@ client.on('messageReactionRemove', async (reaction, user) => {
             });
             console.log('----------------------------------');
 
-            // Store all dpsBoosters players
-            dpsBoosters.push(dpsUsers[0]);
-
-            if (dpsBoosters.length == 1) {
-                var tmpUser = dpsBoosters[0];
-
+            if (dpsBoosters.length == 0) {
                 let tmpMsg = (await reaction.message.fetch()).embeds[0];
                 let tmpEmbed = new Discord.MessageEmbed(tmpMsg);
 
-                tmpEmbed.addFields(
-                    // DPS BOOSTER EMBED FIELD
-                    { name: '<:dps:731617839290515516>', value: `<@${tmpUser.id}>`, inline: true }
-                );
+                // which message will be deleting
+                let temp = new Discord.MessageEmbed().fields;
+                temp.push({ name: '<:dps:731617839290515516>', value: `<@${user.id}>`, inline: true });
+
+                // get id of which field wants delete
+                let idx = tmpEmbed.fields.indexOf(temp[0]);
+                // delete that field
+                tmpEmbed.fields.splice(idx, 1);
+                // edit the message with the new one
                 reaction.message.edit(tmpEmbed);
-                console.log(`DONE! BoostId= ${reaction.message.id} - @${tmpUser.username}#${tmpUser.discriminator} user got ${reaction.emoji.name} job!`);
+                console.log(`DELETED DONE! BoostId= ${reaction.message.id} - @${user.username}#${user.discriminator} user got ${reaction.emoji.name} job!`);
             }
         }
     } // Tank Boosters
     else if (reaction.emoji.id === '731617839596961832' && !user.bot) {
-        if (!dpsUsers.includes(user) && !healerUsers.includes(user)) {
-            if (!tankUsers.includes(user)) {
-                // add booster to tankUsers
-                tankUsers.push(user);
-                //console.log(`Added to tankUsers ${user.username}`);
+        if (tankUsers.includes(user)) {
+            // pop booster from tankUsers
+            try {
+                let deletedUser = tankUsers.shift();
+                tankBoosters.pop();
+                console.log(`Deleted from tankUsers and tankBoosters ${deletedUser.username}`);
+            } catch (error) {
+                console.log(error + " TANK User cannot deleted!")
+            }
 
-                console.log('----------ALL TANK USERS----------');
-                let i = 0;
-                // Print all of tankUsers registered queue
-                tankUsers.forEach(element => {
-                    console.log(`${i}- TANK USER: ${element.username}#${element.discriminator}`);
-                    i++;
-                });
-                console.log('----------------------------------');
+            console.log('----------ALL TANK USERS----------');
+            let i = 0;
+            // Print all of tankUsers registered queue
+            tankUsers.forEach(element => {
+                console.log(`${i}- TANK USER: ${element.username}#${element.discriminator}`);
+                i++;
+            });
+            console.log('----------------------------------');
 
-                // Store all tankBoosters players
-                tankBoosters.push(tankUsers[0]);
+            if (tankBoosters.length == 0) {
+                let tmpMsg = (await reaction.message.fetch()).embeds[0];
+                let tmpEmbed = new Discord.MessageEmbed(tmpMsg);
 
-                if (dpsBoosters.length == 1) {
-                    var tmpUser = tankBoosters[0];
+                // which message will be deleting
+                let temp = new Discord.MessageEmbed().fields;
+                temp.push({ name: '<:tank:731617839596961832>', value: `<@${user.id}>`, inline: true });
 
-                    let tmpMsg = (await reaction.message.fetch()).embeds[0];
-                    let tmpEmbed = new Discord.MessageEmbed(tmpMsg);
-
-                    tmpEmbed.addFields(
-                        // TANK BOOSTER EMBED FIELD
-                        { name: '<:tank:731617839596961832>', value: `<@${tmpUser.id}>`, inline: true }
-                    );
-                    reaction.message.edit(tmpEmbed);
-                    console.log(`DONE! BoostId= ${reaction.message.id} - @${tmpUser.username}#${tmpUser.discriminator} user got ${reaction.emoji.name} job!`);
-                }
+                // get id of which field wants delete
+                let idx = tmpEmbed.fields.indexOf(temp[0]);
+                // delete that field
+                tmpEmbed.fields.splice(idx, 1);
+                // edit the message with the new one
+                reaction.message.edit(tmpEmbed);
+                console.log(`DELETED DONE! BoostId= ${reaction.message.id} - @${user.username}#${user.discriminator} user got ${reaction.emoji.name} job!`);
             }
         }
     } // Healer Boosters
     else if (reaction.emoji.id === '731617839370469446' && !user.bot) {
-        if (!dpsUsers.includes(user) && !tankUsers.includes(user)) {
-            if (!healerUsers.includes(user)) {
-                // add booster to healerUsers
-                healerUsers.push(user);
-                //console.log(`Added to healerUsers ${user.username}`);
+        if (healerUsers.includes(user)) {
+            // pop booster from healerUsers
+            try {
+                let deletedUser = healerUsers.shift();
+                healerBoosters.pop();
+                console.log(`Deleted from healerUsers and healerBoosters ${deletedUser.username}`);
+            } catch (error) {
+                console.log(error + " HEALER User cannot deleted!")
+            }
 
-                console.log('--------ALL HEALER USERS---------');
-                let i = 0;
-                // Print all of healerUsers registered queue
-                healerUsers.forEach(element => {
-                    console.log(`${i}- HEALER USER: ${element.username}#${element.discriminator}`);
-                    i++;
-                });
-                console.log('----------------------------------');
+            console.log('----------ALL HEALER USERS----------');
+            let i = 0;
+            // Print all of healerUsers registered queue
+            healerUsers.forEach(element => {
+                console.log(`${i}- HEALER USER: ${element.username}#${element.discriminator}`);
+                i++;
+            });
+            console.log('----------------------------------');
 
-                // Store all dpsBoosters players
-                healerBoosters.push(healerUsers[0]);
+            if (healerBoosters.length == 0) {
+                let tmpMsg = (await reaction.message.fetch()).embeds[0];
+                let tmpEmbed = new Discord.MessageEmbed(tmpMsg);
 
-                if (healerBoosters.length == 1) {
-                    var tmpUser = healerBoosters[0];
+                // which message will be deleting
+                let temp = new Discord.MessageEmbed().fields;
+                temp.push({ name: '<:healer:731617839370469446>', value: `<@${user.id}>`, inline: true });
 
-                    let tmpMsg = (await reaction.message.fetch()).embeds[0];
-                    let tmpEmbed = new Discord.MessageEmbed(tmpMsg);
-
-                    tmpEmbed.addFields(
-                        // DPS BOOSTER EMBED FIELD
-                        { name: '<:healer:731617839370469446>', value: `<@${tmpUser.id}>`, inline: true }
-                    );
-                    reaction.message.edit(tmpEmbed);
-                    console.log(`DONE! BoostId= ${reaction.message.id} - @${tmpUser.username}#${tmpUser.discriminator} user got ${reaction.emoji.name} job!`);
-                }
+                // get id of which field wants delete
+                let idx = tmpEmbed.fields.indexOf(temp[0]);
+                // delete that field
+                tmpEmbed.fields.splice(idx, 1);
+                // edit the message with the new one
+                reaction.message.edit(tmpEmbed);
+                console.log(`DELETED DONE! BoostId= ${reaction.message.id} - @${user.username}#${user.discriminator} user got ${reaction.emoji.name} job!`);
             }
         }
     }
