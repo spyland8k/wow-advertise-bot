@@ -60,7 +60,7 @@ function modifyEmbed(embed) {
             // Note
             { name: embed.fields[11].name, value: embed.fields[11].value, inline: true },
             // EMPTY AREA
-            { name: '\u200B', value: '\u200B' }
+            { name: 'BOOSTERS', value: '\u200B' }
         )
         //.addField('Inline field title', 'Some value here', true)
         //.setImage('https://i.imgur.com/wSTFkRM.png')
@@ -116,69 +116,54 @@ client.on('message', message => {
 var needDpsBooster = true;
 var dpsBoosters = Array();
 var dpsUsers = Array();
-var dpsQueue = Array();
 var tankBoosters = Array();
 var tankUsers = Array();
-var tankQueue = Array();
 var healerBoosters = Array();
 var healerUsers = Array();
-var healerQueue = Array();
+var boosterList = Array();
 
-async function addDps(reaction, user){
+async function addDps(reaction, user) {
     if (!tankUsers.includes(user) && !healerUsers.includes(user)) {
-        if (!dpsUsers.includes(user)) {
-            // add booster to dpsUsers
-            dpsUsers.push(user);
+        if(dpsBoosters.length == 0){
+            user = dpsUsers[0];
+            // Get first user in dpsUsers
+            dpsBoosters.push(user);
 
-            //console.log(`Added to dpsUsers ${user.username}`);
-
-            console.log('----------ALL DPS USERS----------');
-            let i = 0;
             // Print all of dpsUsers registered queue
+            let i = 0;
+            console.log('----------ALL DPS USERS----------');
             dpsUsers.forEach(element => {
-                console.log(`${i}- DPS USER: ${element.username}#${element.discriminator}`);
+                console.log(`${i}- ALL DPS: ${element.username}#${element.discriminator}`);
                 i++;
             });
             console.log('----------------------------------');
-
-            // Store all dpsBoosters players
-            dpsBoosters.push(dpsUsers[0]);
 
             if (dpsBoosters.length == 1) {
                 let tmpMsg = (await reaction.message.fetch()).embeds[0];
                 let tmpEmbed = new Discord.MessageEmbed(tmpMsg);
 
-                // modified embed message
+                // Modified embed message
                 tmpEmbed.fields.push({ name: '<:dps:731617839290515516>', value: `<@${user.id}>`, inline: true });
-                // send modified embed message
+                // Send modified embed message
                 reaction.message.edit(tmpEmbed);
-                console.log(`DONE! BoostId= ${reaction.message.id} - @${user.username}#${user.discriminator} user got ${reaction.emoji.name} job!`);
             }
         }
-    }
-    else {
-        dpsQueue.push(user);
     }
 }
 async function addTank(reaction, user) {
     if (!dpsUsers.includes(user) && !healerUsers.includes(user)) {
-        if (!tankUsers.includes(user)) {
-            // add booster to tankUsers
-            tankUsers.push(user);
+        if (tankBoosters.length == 0) {
+            // Get first user in tankBoosters
+            tankBoosters.push(tankUsers[0]);
 
-            //console.log(`Added to tankUsers ${user.username}`);
-
-            console.log('----------ALL TANK USERS----------');
-            let i = 0;
             // Print all of tankUsers registered queue
+            let i = 0;
+            console.log('----------ALL TANK USERS----------');
             tankUsers.forEach(element => {
-                console.log(`${i}- TANK USER: ${element.username}#${element.discriminator}`);
+                console.log(`${i}- Booster TANK: ${element.username}#${element.discriminator}`);
                 i++;
             });
             console.log('----------------------------------');
-
-            // Store all tankBoosters players
-            tankBoosters.push(tankUsers[0]);
 
             if (tankBoosters.length == 1) {
                 let tmpMsg = (await reaction.message.fetch()).embeds[0];
@@ -188,33 +173,24 @@ async function addTank(reaction, user) {
                 tmpEmbed.fields.push({ name: '<:tank:731617839596961832>', value: `<@${user.id}>`, inline: true });
 
                 reaction.message.edit(tmpEmbed);
-                console.log(`DONE! BoostId= ${reaction.message.id} - @${user.username}#${user.discriminator} user got ${reaction.emoji.name} job!`);
             }
         }
-    }
-    else {
-        tankQueue.push(user);
     }
 }
 async function addHealer(reaction, user) {
     if (!dpsUsers.includes(user) && !tankUsers.includes(user)) {
-        if (!healerUsers.includes(user)) {
-            // add booster to healerUsers
-            healerUsers.push(user);
+        if (healerBoosters.length == 0) {
+            // Get first user in healerBoosters
+            healerBoosters.push(healerUsers[0]);
 
-            //console.log(`Added to healerUsers ${user.username}`);
-
+            // Print all of healerUsers registered queue
             console.log('--------ALL HEALER USERS---------');
             let i = 0;
-            // Print all of healerUsers registered queue
             healerUsers.forEach(element => {
                 console.log(`${i}- HEALER USER: ${element.username}#${element.discriminator}`);
                 i++;
             });
             console.log('----------------------------------');
-
-            // Store all dpsBoosters players
-            healerBoosters.push(healerUsers[0]);
 
             if (healerBoosters.length == 1) {
                 let tmpMsg = (await reaction.message.fetch()).embeds[0];
@@ -224,35 +200,89 @@ async function addHealer(reaction, user) {
                 tmpEmbed.fields.push({ name: '<:healer:731617839370469446>', value: `<@${user.id}>`, inline: true });
 
                 reaction.message.edit(tmpEmbed);
-                console.log(`DONE! BoostId= ${reaction.message.id} - @${user.username}#${user.discriminator} user got ${reaction.emoji.name} job!`);
             }
         }
     }
-    else {
-        healerQueue.push(user);
-    }
 }
-async function removeDps(reaction, user){
+
+/*async function removeDps(reaction, user) {
     if (dpsUsers.includes(user)) {
-        // pop booster from dpsUsers
-        try {
-            let deletedUser = dpsUsers.shift();
-            dpsBoosters.pop();
-            console.log(`Deleted from dpsUsers and dpsBoosters ${deletedUser.username}`);
-        } catch (error) {
-            console.log(error + " DPS User cannot deleted!")
+        // Remove the first user from dpsBoosters
+        let tmpDpsBooster = dpsBoosters.shift();
+        // Reassign booster
+        let tmpDpsUserLength = dpsUsers.length;
+        // Remove the first user from dpsUsers queue, who user got DPS USER
+        dpsUsers.shift();
+
+        // print all Users at dpsUsers after removed
+        if(dpsUsers.length >= 0){
+            console.log('----------AFTER DPS USERS----------');
+            let i = 0;
+            // Print all of dpsUsers registered queue
+            dpsUsers.forEach(element => {
+                console.log(`${i}- CURRENT DPS: ${element.username}#${element.discriminator}`);
+                i++;
+            });
+            console.log('----------------------------------');
         }
-
-        console.log('----------ALL DPS USERS----------');
-        let i = 0;
-        // Print all of dpsUsers registered queue
-        dpsUsers.forEach(element => {
-            console.log(`${i}- DPS USER: ${element.username}#${element.discriminator}`);
-            i++;
-        });
-        console.log('----------------------------------');
-
+        
         if (dpsBoosters.length == 0) {
+            let tmpMsg = (await reaction.message.fetch()).embeds[0];
+            let tmpEmbed = new Discord.MessageEmbed(tmpMsg);
+
+            // which message will be deleting
+            let temp = new Discord.MessageEmbed().fields;
+            temp.push({ name: '<:dps:731617839290515516>', value: `<@${tmpDpsBooster.id}>`, inline: true });
+
+            try {
+                let i = 0;
+                //console.log(`Delete ${temp[0].name}-${temp[0].value}`);
+                tmpEmbed.fields.forEach(function (field) {
+                    //console.log(`Field[${i}] ${field.name}-${field.value} in ARRAY`);
+                    if (field.name == temp[0].name) {
+                        //console.log(`Field[${i}] exist DPS`);
+                        let idx = tmpEmbed.fields.indexOf(field);
+                        // delete that field
+                        tmpEmbed.fields.splice(idx, 1);
+                        //console.log(`[${i}] Dps User: ${user.username}#${user.discriminator} successfully removed!`)
+                    }
+                    i++;
+                });
+            }
+            catch (error) {
+                console.log(`Dps User: ${tmpDpsBooster.username}#${tmpDpsBooster.discriminator} cannot removed!`)
+            }
+            // new modified message
+            reaction.message.edit(tmpEmbed);
+
+            if(dpsUsers.length >= 0){
+                // if there is any dpsUser queue
+                if (dpsUsers.length == tmpDpsUserLength--) {
+                    // Get first user in dpsUsers
+                    dpsBoosters.push(dpsUsers[0]);
+                    let tmpUser = dpsBoosters[0];
+
+                    if (dpsBoosters.length == 1) {
+                        let tmpMsg = (await reaction.message.fetch()).embeds[0];
+                        let tmpEmbed = new Discord.MessageEmbed(tmpMsg);
+                        // Modified embed message
+                        tmpEmbed.fields.push({ name: '<:dps:731617839290515516>', value: `<@${tmpUser[0].id}>`, inline: true });
+                        // Send modified embed message
+                        reaction.message.edit(tmpEmbed);
+                    }
+                }
+            }
+        }
+    }
+}*/
+
+async function removeDps(reaction, user){
+    if (dpsUsers.includes(user)){
+        let tmpUser = user;
+        let newUser = dpsUsers[0];
+
+        // delete current user
+        if(dpsBoosters.length == 1){
             let tmpMsg = (await reaction.message.fetch()).embeds[0];
             let tmpEmbed = new Discord.MessageEmbed(tmpMsg);
 
@@ -260,27 +290,44 @@ async function removeDps(reaction, user){
             let temp = new Discord.MessageEmbed().fields;
             temp.push({ name: '<:dps:731617839290515516>', value: `<@${user.id}>`, inline: true });
 
-            // get id of which field wants delete
-            let idx = tmpEmbed.fields.indexOf(temp[0]);
-            // delete that field
-            tmpEmbed.fields.splice(idx, 1);
-            // edit the message with the new one
+            try {
+                let i = 0;
+                //console.log(`Delete ${temp[0].name}-${temp[0].value}`);
+                tmpEmbed.fields.forEach(function (field) {
+                    //console.log(`Field[${i}] ${field.name}-${field.value} in ARRAY`);
+                    if (field.name == temp[0].name) {
+                        //console.log(`Field[${i}] exist DPS`);
+                        let idx = tmpEmbed.fields.indexOf(field);
+                        // delete that field
+                        tmpEmbed.fields.splice(idx, 1);
+                        //console.log(`[${i}] Dps User: ${user.username}#${user.discriminator} successfully removed!`)
+                    }
+                    i++;
+                });
+            }
+            catch (error) {
+                console.log(`Dps User: ${user.username}#${user.discriminator} cannot removed!`)
+            }
+            // new modified message
             reaction.message.edit(tmpEmbed);
-            console.log(`DELETED DONE! BoostId= ${reaction.message.id} - @${user.username}#${user.discriminator} user got ${reaction.emoji.name} job!`);
-        }
+            
+            // remove user from dpsBooster
+            dpsBoosters.shift();
+            // remove user from dpsUsers
+            dpsUsers.shift();
 
-        //TODO if user choose more than one boost class
-        if (healerQueue.includes(user)) {
-            await addHealer(reaction, user);
-        } else if (tankQueue.includes(user)) {
-            await addTank(reaction, user);
+            // add first user at dpsUser queue
+            if(dpsUsers.length > 0){
+                await addDps(reaction, dpsUsers[0]);
+            }
         }
     }
 }
-async function removeTank(reaction, user){
+
+async function removeTank(reaction, user) {
     if (tankUsers.includes(user)) {
-        // pop booster from tankUsers
         try {
+            // pop booster from tankUsers
             let deletedUser = tankUsers.shift();
             tankBoosters.pop();
             console.log(`Deleted from tankUsers and tankBoosters ${deletedUser.username}`);
@@ -305,27 +352,37 @@ async function removeTank(reaction, user){
             let temp = new Discord.MessageEmbed().fields;
             temp.push({ name: '<:tank:731617839596961832>', value: `<@${user.id}>`, inline: true });
 
-            // get id of which field wants delete
-            let idx = tmpEmbed.fields.indexOf(temp[0]);
-            // delete that field
-            tmpEmbed.fields.splice(idx, 1);
+            // get id of which field wants delete, then delete
+            //let idx = tmpEmbed.fields.indexOf(temp[0]);
+            //tmpEmbed.fields.splice(idx, 1);
+
+            try {
+                let i = 0;
+                tmpEmbed.fields.forEach(function (field) {
+                    console.log(`Field[${i}] ${field.name}-${field.value} in ARRAY`);
+                    if (field.name == temp[0].name) {
+                        console.log(`Field[${i}] exist TANK`);
+                        let idx = tmpEmbed.fields.indexOf(field);
+                        // delete that field
+                        tmpEmbed.fields.splice(idx, 1);
+                        console.log(`[${i}] Tank User: ${user.username}#${user.discriminator} successfully removed!`)
+                    }
+                    i++;
+                });
+            }
+            catch (error) {
+                console.log(`Tank User: ${user.username}#${user.discriminator} cannot removed!`)
+            }
+
             // edit the message with the new one
             reaction.message.edit(tmpEmbed);
-            console.log(`DELETED DONE! BoostId= ${reaction.message.id} - @${user.username}#${user.discriminator} user got ${reaction.emoji.name} job!`);
-        }
-
-        //TODO if user choose more than one boost class
-        if (dpsQueue.includes(user)) {
-            await addDps(reaction, user);
-        } else if (healerQueue.includes(user)) {
-            await addHealer(reaction, user);
         }
     }
 }
-async function removeHealer(reaction, user){
+async function removeHealer(reaction, user) {
     if (healerUsers.includes(user)) {
-        // pop booster from healerUsers
         try {
+            // pop booster from healerUsers
             let deletedUser = healerUsers.shift();
             healerBoosters.pop();
             console.log(`Deleted from healerUsers and healerBoosters ${deletedUser.username}`);
@@ -350,26 +407,36 @@ async function removeHealer(reaction, user){
             let temp = new Discord.MessageEmbed().fields;
             temp.push({ name: '<:healer:731617839370469446>', value: `<@${user.id}>`, inline: true });
 
-            // get id of which field wants delete
-            let idx = tmpEmbed.fields.indexOf(temp[0]);
-            // delete that field
-            tmpEmbed.fields.splice(idx, 1);
+            // get id of which field wants delete, then delete
+            //let idx = tmpEmbed.fields.indexOf(temp[0]);
+            //tmpEmbed.fields.splice(idx, 1);
+
+            try {
+                let i = 0;
+                console.log(`Delete ${temp[0].name}-${temp[0].value}`);
+                tmpEmbed.fields.forEach(function (field) {
+                    console.log(`Field[${i}] ${field.name}-${field.value} in ARRAY`);
+                    if (field.name == temp[0].name) {
+                        console.log(`Field[${i}] exist HEALER`);
+                        let idx = tmpEmbed.fields.indexOf(field);
+                        // delete that field
+                        tmpEmbed.fields.splice(idx, 1);
+                        console.log(`[${i}] Healer User: ${user.username}#${user.discriminator} successfully removed!`)
+                    }
+                    i++;
+                });
+            }
+            catch (error) {
+                console.log(`Dps User: ${user.username}#${user.discriminator} cannot removed!`)
+            }
             // edit the message with the new one
             reaction.message.edit(tmpEmbed);
-            console.log(`DELETED DONE! BoostId= ${reaction.message.id} - @${user.username}#${user.discriminator} user got ${reaction.emoji.name} job!`);
-        }
-
-        //TODO if user choose more than one boost class
-        if (dpsQueue.includes(user)) {
-            await addDps(reaction, user);
-        } else if (tankQueue.includes(user)) {
-            await addTank(reaction, user);
         }
     }
 }
 
 client.on('messageReactionAdd', async (reaction, user) => {
-     if (reaction.partial) {
+    if (reaction.partial) {
         console.log(`Reaction is partial: ${reaction.partial}`);
         // If the message this reaction belongs to was removed the fetching 
         // might result in an API error, which we need to handle
@@ -382,15 +449,27 @@ client.on('messageReactionAdd', async (reaction, user) => {
         }
     }
 
-    // DPS Boosters
+    // DPS Queue
     if (reaction.emoji.id === '731617839290515516' && !user.bot) {
-        await addDps(reaction, user);
-    }   // Tank Boosters
+        // if reacted user does not exist in dpsUsers
+        if (!dpsUsers.includes(user)) {
+            dpsUsers.push(user);
+            await addDps(reaction, dpsUsers[0]);
+        }
+    }   // Tank Queue
     else if (reaction.emoji.id === '731617839596961832' && !user.bot) {
-        await addTank(reaction,user);
-    }  // Healer Boosters
+        // if reacted user does not exist in tankUsers
+        if (!tankUsers.includes(user)) {
+            tankUsers.push(user);
+            await addTank(reaction, tankUsers[0]);
+        }
+    }  // Healer Queue
     else if (reaction.emoji.id === '731617839370469446' && !user.bot) {
-        await addHealer(reaction, user);
+        // if reacted user does not exist in healerUsers
+        if (!healerUsers.includes(user)) {
+            healerUsers.push(user);
+            await addHealer(reaction, healerUsers[0]);
+        }
     }
 });
 
