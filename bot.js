@@ -135,10 +135,40 @@ async function addDps(reaction, user) {
             await reaction.message.edit(tmpEmbed);
         }
     }
+    else if (!healerUsers.includes(user) && !dpsBoosters.includes(user) && !tankBoosters.includes(user)) {
+        // TODO Might give error when, dps and tank in same user.
+        if (dpsBoosters.length == 0) {
+            // Get first user in dpsUsers
+            dpsBoosters.push(user);
+
+            let tmpMsg = (await reaction.message.fetch()).embeds[0];
+            let tmpEmbed = new Discord.MessageEmbed(tmpMsg);
+
+            // Modified embed message
+            tmpEmbed.fields.push({ name: '<:dps:731617839290515516>', value: `<@${user.id}>`, inline: true });
+            // Send modified embed message
+            await reaction.message.edit(tmpEmbed);
+        }
+    }
 }
 
 async function addTank(reaction, user) {
     if (!dpsUsers.includes(user) && !healerUsers.includes(user)) {
+        if (tankBoosters.length == 0) {
+            // Get first user in tankBoosters
+            tankBoosters.push(user);
+
+            let tmpMsg = (await reaction.message.fetch()).embeds[0];
+            let tmpEmbed = new Discord.MessageEmbed(tmpMsg);
+
+            // Modified embed message
+            tmpEmbed.fields.push({ name: '<:tank:731617839596961832>', value: `<@${user.id}>`, inline: true });
+            // Send modified embed message
+            await reaction.message.edit(tmpEmbed);
+        }
+    } 
+    else if (!tankUsers.includes(user) && !dpsBoosters.includes(user) && !healerBoosters.includes(user)) {
+        // TODO Might give error when, healer and dps in same user.
         if (tankBoosters.length == 0) {
             // Get first user in tankBoosters
             tankBoosters.push(user);
@@ -156,6 +186,36 @@ async function addTank(reaction, user) {
 
 async function addHealer(reaction, user) {
     if (!dpsUsers.includes(user) && !tankUsers.includes(user)) {
+        if (healerBoosters.length == 0) {
+            // Get first user in healerBoosters
+            healerBoosters.push(user);
+
+            let tmpMsg = (await reaction.message.fetch()).embeds[0];
+            let tmpEmbed = new Discord.MessageEmbed(tmpMsg);
+
+            // Modified embed message
+            tmpEmbed.fields.push({ name: '<:healer:731617839370469446>', value: `<@${user.id}>`, inline: true });
+            // Send modified embed message
+            await reaction.message.edit(tmpEmbed);
+        }
+    }
+    else if (!tankUsers.includes(user) && !dpsBoosters.includes(user) && !healerBoosters.includes(user)) {
+        // TODO Might give error when, healer and dps in same user.
+        if (healerBoosters.length == 0) {
+            // Get first user in healerBoosters
+            healerBoosters.push(user);
+
+            let tmpMsg = (await reaction.message.fetch()).embeds[0];
+            let tmpEmbed = new Discord.MessageEmbed(tmpMsg);
+
+            // Modified embed message
+            tmpEmbed.fields.push({ name: '<:healer:731617839370469446>', value: `<@${user.id}>`, inline: true });
+            // Send modified embed message
+            await reaction.message.edit(tmpEmbed);
+        }
+    } 
+    else if (!dpsUsers.includes(user) && !tankBoosters.includes(user) && !healerBoosters.includes(user)) {
+        // TODO Might give error when, healer and dps in same user.
         if (healerBoosters.length == 0) {
             // Get first user in healerBoosters
             healerBoosters.push(user);
@@ -203,19 +263,36 @@ async function removeDps(reaction, user) {
                 await addDps(reaction, dpsUsers[0]);
             }
 
-
             // If user choosed another reactions when release dps then add to him
             if (tankUsers.includes(user) && tankBoosters.length == 0) {
-                if(healerUsers.includes(user)){
+                // Check the user is in another emote
+                if (!healerUsers.includes(user)) {
                     await addTank(reaction, user);
                 }
-            } 
+            }
+            // If user choosed another reactions when release healer then add to him
             
             if (healerUsers.includes(user) && healerBoosters.length == 0) {
-                if(tankUsers.includes(user)){
+                // Check the user is in another emote
+                if (!tankUsers.includes(user)) {
                     await addHealer(reaction, user);
                 }
             }
+
+            if (tankUsers.includes(user) && healerUsers.includes(user)) {
+                if (tankBoosters.length == 0 && healerBoosters.length == 0) {
+                    await addHealer(reaction, user);
+                }
+            }
+        }
+
+        // User is waiting in Queue, release him before assign booster
+        if (dpsUsers.length > 0) {
+            dpsUsers.forEach(function (item, index, object) {
+                if (item === user) {
+                    object.splice(index, 1);
+                }
+            });
         }
     }
 }
@@ -254,17 +331,33 @@ async function removeTank(reaction, user) {
 
             // If user choosed another reactions when release dps then add to him
             if (dpsUsers.includes(user) && dpsBoosters.length == 0) {
-
-                if (healerUsers.includes(user)) {
+                // Check the user is in another emote
+                if (!healerUsers.includes(user)) {
                     await addDps(reaction, user);
                 }
             }
-            
+            // If user choosed another reactions when release healer then add to him
             if (healerUsers.includes(user) && healerBoosters.length == 0) {
-                if (dpsUsers.includes(user)) {
+                // Check the user is in another emote
+                if (!dpsUsers.includes(user)) {
                     await addHealer(reaction, user);
                 }
             }
+
+            // When user select more than two react, prefer healer
+            if (dpsUsers.includes(user) && healerUsers.includes(user)) {
+                if (dpsBoosters.length == 0 && healerBoosters.length == 0) {
+                    await addHealer(reaction, user);
+                }
+            }
+        }
+        // User is waiting in Queue, release him before assign booster
+        if (tankUsers.length > 0) {
+            tankUsers.forEach(function (item, index, object) {
+                if (item === user) {
+                    object.splice(index, 1);
+                }
+            });
         }
     }
 }
@@ -303,26 +396,36 @@ async function removeHealer(reaction, user) {
 
             // If user choosed another reactions when release dps then add to him
             if (dpsUsers.includes(user) && dpsBoosters.length == 0) {
-                if (tankUsers.includes(user)) {
+                // Check the user is in another emote
+                if (!tankUsers.includes(user)) {
                     await addDps(reaction, user);
                 }
             }
             
+            // If user choosed another reactions when release tank then add to him
             if (tankUsers.includes(user) && tankBoosters.length == 0) {
-                if (dpsUsers.includes(user)) {
+                // Check the user is in another emote
+                if (!dpsUsers.includes(user)) {
                     await addTank(reaction, user);
+                }
+            }
+
+            // When user select more than two react, prefer dps
+            if (tankUsers.includes(user) && dpsUsers.includes(user)) {
+                if (tankBoosters.length == 0 && dpsBoosters.length == 0) {
+                    await addDps(reaction, user);
                 }
             }
         }
 
         // User is waiting in Queue, release him before assign booster
-        /*if (healerUsers.length > 0){
+        if (healerUsers.length > 0) {
             healerUsers.forEach(function (item, index, object) {
                 if (item === user) {
                     object.splice(index, 1);
                 }
             });
-        }*/
+        }
     }
 }
 
@@ -340,10 +443,14 @@ client.on('messageReactionAdd', async (reaction, user) => {
         }
     }
 
+    // tıklanan emotedaki users[0] herhangi bir boost rolü almışsa,
+    // yeni user'ı o emote users arrayine unshift et!
+
     // DPS Queue
     if (reaction.emoji.id === '731617839290515516' && !user.bot) {
         // if reacted user does not exist in dpsUsers, avoid clone
         if (!dpsUsers.includes(user)) {
+            let x = dpsBoosters;
             dpsUsers.push(user);
             await addDps(reaction, dpsUsers[0]);
         }
@@ -351,6 +458,7 @@ client.on('messageReactionAdd', async (reaction, user) => {
     else if (reaction.emoji.id === '731617839596961832' && !user.bot) {
         // if reacted user does not exist in tankUsers, avoid clone
         if (!tankUsers.includes(user)) {
+            let y = tankBoosters;
             tankUsers.push(user);
             await addTank(reaction, tankUsers[0]);
         }
@@ -358,6 +466,7 @@ client.on('messageReactionAdd', async (reaction, user) => {
     else if (reaction.emoji.id === '731617839370469446' && !user.bot) {
         // if reacted user does not exist in healerUsers, avoid clone
         if (!healerUsers.includes(user)) {
+            let z = healerBoosters;
             healerUsers.push(user);
             await addHealer(reaction, healerUsers[0]);
         }
