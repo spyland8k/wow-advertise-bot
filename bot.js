@@ -113,14 +113,12 @@ client.on('message', message => {
     }
 });
 
-var needDpsBooster = true;
 var dpsBoosters = Array();
 var dpsUsers = Array();
 var tankBoosters = Array();
 var tankUsers = Array();
 var healerBoosters = Array();
 var healerUsers = Array();
-var boosterList = Array();
 
 async function addDps(reaction, user) {
     if (!tankUsers.includes(user) && !healerUsers.includes(user)) {
@@ -134,7 +132,7 @@ async function addDps(reaction, user) {
             // Modified embed message
             tmpEmbed.fields.push({ name: '<:dps:731617839290515516>', value: `<@${user.id}>`, inline: true });
             // Send modified embed message
-            reaction.message.edit(tmpEmbed);
+            await reaction.message.edit(tmpEmbed);
         }
     }
 }
@@ -151,7 +149,7 @@ async function addTank(reaction, user) {
             // Modified embed message
             tmpEmbed.fields.push({ name: '<:tank:731617839596961832>', value: `<@${user.id}>`, inline: true });
             // Send modified embed message
-            reaction.message.edit(tmpEmbed);
+            await reaction.message.edit(tmpEmbed);
         }
     }
 }
@@ -168,7 +166,7 @@ async function addHealer(reaction, user) {
             // Modified embed message
             tmpEmbed.fields.push({ name: '<:healer:731617839370469446>', value: `<@${user.id}>`, inline: true });
             // Send modified embed message
-            reaction.message.edit(tmpEmbed);
+            await reaction.message.edit(tmpEmbed);
         }
     }
 }
@@ -177,13 +175,11 @@ async function removeDps(reaction, user) {
     if (dpsUsers.includes(user)) {
         //let tmpUser = user;
         //let newUser = dpsUsers[0];
-
-        // delete current user
         if (dpsBoosters.length == 1) {
             let tmpMsg = (await reaction.message.fetch()).embeds[0];
             let tmpEmbed = new Discord.MessageEmbed(tmpMsg);
 
-            // which message will be deleting
+            // Which message will be deleting
             let temp = new Discord.MessageEmbed().fields;
             temp.push({ name: '<:dps:731617839290515516>', value: `<@${user.id}>`, inline: true });
 
@@ -194,17 +190,31 @@ async function removeDps(reaction, user) {
                 }
             }
 
-            // new modified message
-            reaction.message.edit(tmpEmbed);
+            // New modified message
+            await reaction.message.edit(tmpEmbed);
 
-            // remove user from dpsBooster
+            // Remove user from dpsBooster
             dpsBoosters.shift();
-            // remove user from dpsUsers
+            // Remove user from dpsUsers
             dpsUsers.shift();
 
-            // add first user at dpsUser queue
+            // Add first user at dpsUser queue
             if (dpsUsers.length > 0) {
                 await addDps(reaction, dpsUsers[0]);
+            }
+
+
+            // If user choosed another reactions when release dps then add to him
+            if (tankUsers.includes(user) && tankBoosters.length == 0) {
+                if(healerUsers.includes(user)){
+                    await addTank(reaction, user);
+                }
+            } 
+            
+            if (healerUsers.includes(user) && healerBoosters.length == 0) {
+                if(tankUsers.includes(user)){
+                    await addHealer(reaction, user);
+                }
             }
         }
     }
@@ -214,13 +224,11 @@ async function removeTank(reaction, user) {
     if (tankUsers.includes(user)) {
         //let tmpUser = user;
         //let newUser = dpsUsers[0];
-
-        // delete current user
         if (tankBoosters.length == 1) {
             let tmpMsg = (await reaction.message.fetch()).embeds[0];
             let tmpEmbed = new Discord.MessageEmbed(tmpMsg);
 
-            // which message will be deleting
+            // Which message will be deleting
             let temp = new Discord.MessageEmbed().fields;
             temp.push({ name: '<:tank:731617839290515516>', value: `<@${user.id}>`, inline: true });
 
@@ -231,17 +239,31 @@ async function removeTank(reaction, user) {
                 }
             }
 
-            // new modified message
-            reaction.message.edit(tmpEmbed);
+            // New modified message
+            await reaction.message.edit(tmpEmbed);
 
-            // remove user from tankBooster
+            // Remove user from tankBooster
             tankBoosters.shift();
-            // remove user from tankUsers
+            // Remove user from tankUsers
             tankUsers.shift();
 
-            // add first user at tankUser queue
+            // Add first user at tankUser queue
             if (tankUsers.length > 0) {
                 await addTank(reaction, tankUsers[0]);
+            }
+
+            // If user choosed another reactions when release dps then add to him
+            if (dpsUsers.includes(user) && dpsBoosters.length == 0) {
+
+                if (healerUsers.includes(user)) {
+                    await addDps(reaction, user);
+                }
+            }
+            
+            if (healerUsers.includes(user) && healerBoosters.length == 0) {
+                if (dpsUsers.includes(user)) {
+                    await addHealer(reaction, user);
+                }
             }
         }
     }
@@ -251,13 +273,11 @@ async function removeHealer(reaction, user) {
     if (healerUsers.includes(user)) {
         //let tmpUser = user;
         //let newUser = dpsUsers[0];
-
-        // delete current user
         if (healerBoosters.length == 1) {
             let tmpMsg = (await reaction.message.fetch()).embeds[0];
             let tmpEmbed = new Discord.MessageEmbed(tmpMsg);
 
-            // which message will be deleting
+            // Which message will be deleting
             let temp = new Discord.MessageEmbed().fields;
             temp.push({ name: '<:healer:731617839370469446>', value: `<@${user.id}>`, inline: true });
 
@@ -268,19 +288,41 @@ async function removeHealer(reaction, user) {
                 }
             }
 
-            // new modified message
-            reaction.message.edit(tmpEmbed);
+            // New modified message
+            await reaction.message.edit(tmpEmbed);
 
-            // remove user from healerBooster
+            // Remove user from healerBooster
             healerBoosters.shift();
-            // remove user from healerUsers
+            // Remove user from healerUsers
             healerUsers.shift();
 
-            // add first user at healerUser queue
+            // Add first user at healerUser queue
             if (healerUsers.length > 0) {
                 await addHealer(reaction, healerUsers[0]);
             }
+
+            // If user choosed another reactions when release dps then add to him
+            if (dpsUsers.includes(user) && dpsBoosters.length == 0) {
+                if (tankUsers.includes(user)) {
+                    await addDps(reaction, user);
+                }
+            }
+            
+            if (tankUsers.includes(user) && tankBoosters.length == 0) {
+                if (dpsUsers.includes(user)) {
+                    await addTank(reaction, user);
+                }
+            }
         }
+
+        // User is waiting in Queue, release him before assign booster
+        /*if (healerUsers.length > 0){
+            healerUsers.forEach(function (item, index, object) {
+                if (item === user) {
+                    object.splice(index, 1);
+                }
+            });
+        }*/
     }
 }
 
@@ -300,21 +342,21 @@ client.on('messageReactionAdd', async (reaction, user) => {
 
     // DPS Queue
     if (reaction.emoji.id === '731617839290515516' && !user.bot) {
-        // if reacted user does not exist in dpsUsers
+        // if reacted user does not exist in dpsUsers, avoid clone
         if (!dpsUsers.includes(user)) {
             dpsUsers.push(user);
             await addDps(reaction, dpsUsers[0]);
         }
     }   // Tank Queue
     else if (reaction.emoji.id === '731617839596961832' && !user.bot) {
-        // if reacted user does not exist in tankUsers
+        // if reacted user does not exist in tankUsers, avoid clone
         if (!tankUsers.includes(user)) {
             tankUsers.push(user);
             await addTank(reaction, tankUsers[0]);
         }
     }  // Healer Queue
     else if (reaction.emoji.id === '731617839370469446' && !user.bot) {
-        // if reacted user does not exist in healerUsers
+        // if reacted user does not exist in healerUsers, avoid clone
         if (!healerUsers.includes(user)) {
             healerUsers.push(user);
             await addHealer(reaction, healerUsers[0]);
