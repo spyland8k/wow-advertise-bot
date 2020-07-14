@@ -385,11 +385,15 @@ async function removeHealer(reaction, user) {
             await reaction.message.edit(tmpEmbed);
 
             // Remove user from healerBooster
-            healerBoosters.shift();
-            // Remove user from healerUsers
-            healerUsers.shift();
+            let tmpUser = healerBoosters.shift();  
+            // Remove user from healerUsers // find in healer user shifted healer booster
+            // delete tmpUser from healerusers
+            const idx = healerUsers.indexOf(tmpUser);
+            if (idx > -1) {
+                healerUsers.splice(idx, 1);
+            }
 
-            // Add first user at healerUser queue
+            // Add first user at healerUser waiting at queue
             if (healerUsers.length > 0) {
                 await addHealer(reaction, healerUsers[0]);
             }
@@ -466,8 +470,11 @@ client.on('messageReactionAdd', async (reaction, user) => {
     else if (reaction.emoji.id === '731617839370469446' && !user.bot) {
         // if reacted user does not exist in healerUsers, avoid clone
         if (!healerUsers.includes(user)) {
-            let z = healerBoosters;
-            healerUsers.push(user);
+            if((dpsBoosters[0] == healerUsers[0]) || (dpsBoosters[0] == tankUsers[0])){
+                healerUsers.unshift(user);
+            }else{
+                healerUsers.push(user);
+            }
             await addHealer(reaction, healerUsers[0]);
         }
     }
