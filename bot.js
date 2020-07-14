@@ -94,12 +94,13 @@ client.on('message', async message => {
             } catch (error) {
                 console.log(newEmbed + " " + error);
             }
+            
         }
     }
 });
 
 // Add react to Embed Message
-client.on('message', message => {
+client.on('message', async message => {
     // Add react only specific channel
     if (message.channel.id === webhookToChannelId) {
         // Modify footer of message for boostId
@@ -119,12 +120,14 @@ var tankBoosters = Array();
 var tankUsers = Array();
 var healerBoosters = Array();
 var healerUsers = Array();
+var boosterList = Array();
 
 async function addDps(reaction, user) {
     if (!tankUsers.includes(user) && !healerUsers.includes(user)) {
         if (dpsBoosters.length == 0) {
             // Get first user in dpsUsers
             dpsBoosters.push(user);
+            boosterList.push(user);
 
             let tmpMsg = (await reaction.message.fetch()).embeds[0];
             let tmpEmbed = new Discord.MessageEmbed(tmpMsg);
@@ -140,6 +143,7 @@ async function addDps(reaction, user) {
         if (dpsBoosters.length == 0) {
             // Get first user in dpsUsers
             dpsBoosters.push(user);
+            boosterList.push(user);
 
             let tmpMsg = (await reaction.message.fetch()).embeds[0];
             let tmpEmbed = new Discord.MessageEmbed(tmpMsg);
@@ -157,6 +161,7 @@ async function addTank(reaction, user) {
         if (tankBoosters.length == 0) {
             // Get first user in tankBoosters
             tankBoosters.push(user);
+            boosterList.push(user);
 
             let tmpMsg = (await reaction.message.fetch()).embeds[0];
             let tmpEmbed = new Discord.MessageEmbed(tmpMsg);
@@ -172,6 +177,7 @@ async function addTank(reaction, user) {
         if (tankBoosters.length == 0) {
             // Get first user in tankBoosters
             tankBoosters.push(user);
+            boosterList.push(user);
 
             let tmpMsg = (await reaction.message.fetch()).embeds[0];
             let tmpEmbed = new Discord.MessageEmbed(tmpMsg);
@@ -189,6 +195,7 @@ async function addHealer(reaction, user) {
         if (healerBoosters.length == 0) {
             // Get first user in healerBoosters
             healerBoosters.push(user);
+            boosterList.push(user);
 
             let tmpMsg = (await reaction.message.fetch()).embeds[0];
             let tmpEmbed = new Discord.MessageEmbed(tmpMsg);
@@ -204,6 +211,7 @@ async function addHealer(reaction, user) {
         if (healerBoosters.length == 0) {
             // Get first user in healerBoosters
             healerBoosters.push(user);
+            boosterList.push(user);
 
             let tmpMsg = (await reaction.message.fetch()).embeds[0];
             let tmpEmbed = new Discord.MessageEmbed(tmpMsg);
@@ -244,7 +252,7 @@ async function removeDps(reaction, user) {
             temp.push({ name: '<:dps:731617839290515516>', value: `<@${user.id}>`, inline: true });
 
             for (let i = 10; i < tmpEmbed.fields.length; i++) {
-                if (tmpEmbed.fields[i].value == temp[0].value) {
+                if (tmpEmbed.fields[i].value == temp[0].value && tmpEmbed.fields[i].name == temp[0].name) {
                     tmpEmbed.fields.splice(i, 1);
                     i--;
                 }
@@ -254,10 +262,20 @@ async function removeDps(reaction, user) {
             await reaction.message.edit(tmpEmbed);
 
             // Remove user from dpsBooster
-            dpsBoosters.shift();
+            let tmpUser = dpsBoosters.shift();
             // Remove user from dpsUsers
-            dpsUsers.shift();
-
+            // Find in healer user shifted healer booster
+            // Delete tmpUser from dpsUsers
+            let idx = dpsUsers.indexOf(tmpUser);
+            if (idx > -1) {
+                dpsUsers.splice(idx, 1);
+            }
+            // Remove user from boosterList
+            idx = boosterList.indexOf(tmpUser);
+            if (idx > -1) {
+                boosterList.splice(idx, 1);
+            }
+            
             // Add first user at dpsUser queue
             if (dpsUsers.length > 0) {
                 await addDps(reaction, dpsUsers[0]);
@@ -320,9 +338,19 @@ async function removeTank(reaction, user) {
             await reaction.message.edit(tmpEmbed);
 
             // Remove user from tankBooster
-            tankBoosters.shift();
-            // Remove user from tankUsers
-            tankUsers.shift();
+            let tmpUser = tankBoosters.shift();
+            // Remove user from tankBooster 
+            // Find in healer user shifted healer booster
+            // Delete tmpUser from tankUsers
+            let idx = tankUsers.indexOf(tmpUser);
+            if (idx > -1) {
+                tankUsers.splice(idx, 1);
+            }
+            // Remove user from boosterList
+            idx = boosterList.indexOf(tmpUser);
+            if (idx > -1) {
+                boosterList.splice(idx, 1);
+            }
 
             // Add first user at tankUser queue
             if (tankUsers.length > 0) {
@@ -375,7 +403,7 @@ async function removeHealer(reaction, user) {
             temp.push({ name: '<:healer:731617839370469446>', value: `<@${user.id}>`, inline: true });
 
             for (let i = 10; i < tmpEmbed.fields.length; i++) {
-                if (tmpEmbed.fields[i].value == temp[0].value) {
+                if (tmpEmbed.fields[i].value == temp[0].value && tmpEmbed.fields[i].name == temp[0].name) {
                     tmpEmbed.fields.splice(i, 1);
                     i--;
                 }
@@ -386,11 +414,17 @@ async function removeHealer(reaction, user) {
 
             // Remove user from healerBooster
             let tmpUser = healerBoosters.shift();  
-            // Remove user from healerUsers // find in healer user shifted healer booster
-            // delete tmpUser from healerusers
-            const idx = healerUsers.indexOf(tmpUser);
+            // Remove user from healerUsers 
+            // Find in healer user shifted healer booster
+            // Delete tmpUser from healerusers
+            let idx = healerUsers.indexOf(tmpUser);
             if (idx > -1) {
                 healerUsers.splice(idx, 1);
+            }
+            // Remove user from boosterList
+            idx = boosterList.indexOf(tmpUser);
+            if (idx > -1) {
+                boosterList.splice(idx, 1);
             }
 
             // Add first user at healerUser waiting at queue
@@ -454,16 +488,24 @@ client.on('messageReactionAdd', async (reaction, user) => {
     if (reaction.emoji.id === '731617839290515516' && !user.bot) {
         // if reacted user does not exist in dpsUsers, avoid clone
         if (!dpsUsers.includes(user)) {
-            let x = dpsBoosters;
-            dpsUsers.push(user);
+            if ((dpsBoosters[0] == healerUsers[0]) || (dpsBoosters[0] == healerUsers[0])) {
+                dpsUsers.unshift(user);
+            }
+            else{
+                dpsUsers.push(user);
+            }
             await addDps(reaction, dpsUsers[0]);
         }
     }   // Tank Queue
     else if (reaction.emoji.id === '731617839596961832' && !user.bot) {
         // if reacted user does not exist in tankUsers, avoid clone
         if (!tankUsers.includes(user)) {
-            let y = tankBoosters;
-            tankUsers.push(user);
+            if ((dpsBoosters[0] == tankUsers[0]) || (dpsBoosters[0] == healerUsers[0])) {
+                tankUsers.unshift(user);
+            }
+            else{
+                tankUsers.push(user);
+            }
             await addTank(reaction, tankUsers[0]);
         }
     }  // Healer Queue
