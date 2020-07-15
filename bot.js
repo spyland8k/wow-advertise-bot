@@ -10,6 +10,7 @@ const hookForm = "731543421340221521";
 // routing to booster channel
 const webhookToChannelId = "731523810662154311";
 
+
 client.login(process.env.DISCORD_TOKEN);
 
 function getRandomArbitrary(min, max) {
@@ -94,7 +95,7 @@ client.on('message', async message => {
             } catch (error) {
                 console.log(newEmbed + " " + error);
             }
-            
+
         }
     }
 });
@@ -113,6 +114,8 @@ client.on('message', async message => {
             message.react('731617839370469446'));// HEALER
     }
 });
+
+var MessageList = Array();
 
 var dpsBoosters = Array();
 var dpsUsers = Array();
@@ -468,30 +471,13 @@ async function removeHealer(reaction, user) {
 }
 
 client.on('messageReactionAdd', async (reaction, user) => {
-    if (reaction.partial) {
-        console.log(`Reaction is partial: ${reaction.partial}`);
-        // If the message this reaction belongs to was removed the fetching 
-        // might result in an API error, which we need to handle
-        try {
-            await reaction.fetch();
-        } catch (error) {
-            console.log('Something went wrong when fetching the message: ', error);
-            // Return as `reaction.message.author` may be undefined/null
-            return;
-        }
-    }
-
-    // tıklanan emotedaki users[0] herhangi bir boost rolü almışsa,
-    // yeni user'ı o emote users arrayine unshift et!
-
-    // DPS Queue
     if (reaction.emoji.id === '731617839290515516' && !user.bot) {
         // if reacted user does not exist in dpsUsers, avoid clone
         if (!dpsUsers.includes(user)) {
             if ((dpsBoosters[0] == healerUsers[0]) || (dpsBoosters[0] == healerUsers[0])) {
                 dpsUsers.unshift(user);
             }
-            else{
+            else {
                 dpsUsers.push(user);
             }
             await addDps(reaction, dpsUsers[0]);
@@ -503,7 +489,7 @@ client.on('messageReactionAdd', async (reaction, user) => {
             if ((dpsBoosters[0] == tankUsers[0]) || (dpsBoosters[0] == healerUsers[0])) {
                 tankUsers.unshift(user);
             }
-            else{
+            else {
                 tankUsers.push(user);
             }
             await addTank(reaction, tankUsers[0]);
@@ -512,9 +498,9 @@ client.on('messageReactionAdd', async (reaction, user) => {
     else if (reaction.emoji.id === '731617839370469446' && !user.bot) {
         // if reacted user does not exist in healerUsers, avoid clone
         if (!healerUsers.includes(user)) {
-            if((dpsBoosters[0] == healerUsers[0]) || (dpsBoosters[0] == tankUsers[0])){
+            if ((dpsBoosters[0] == healerUsers[0]) || (dpsBoosters[0] == tankUsers[0])) {
                 healerUsers.unshift(user);
-            }else{
+            } else {
                 healerUsers.push(user);
             }
             await addHealer(reaction, healerUsers[0]);
@@ -523,19 +509,6 @@ client.on('messageReactionAdd', async (reaction, user) => {
 });
 
 client.on('messageReactionRemove', async (reaction, user) => {
-    if (reaction.partial) {
-        console.log(`Reaction is partial: ${reaction.partial}`);
-        // If the message this reaction belongs to was removed the fetching 
-        // might result in an API error, which we need to handle
-        try {
-            await reaction.fetch();
-        } catch (error) {
-            console.log('Something went wrong when fetching the message: ', error);
-            // Return as `reaction.message.author` may be undefined/null
-            return;
-        }
-    }
-
     // DPS Boosters
     if (reaction.emoji.id === '731617839290515516' && !user.bot) {
         await removeDps(reaction, user);
