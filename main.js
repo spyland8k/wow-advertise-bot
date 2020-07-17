@@ -47,16 +47,15 @@ class Advertise {
 }
 
 var MessageList = Array();
+var isAdvertiserDps = Boolean(false);
+var isAdvertiserTank = Boolean(false);
+var isAdvertiserHealer = Boolean(false);
+var isAdvertiserKey = Boolean(false);
 
 
 function getRandomArbitrary(min, max) {
     return Math.random() * (max - min) + min;
 }
-
-var isAdvertiserDps = Boolean(false);
-var isAdvertiserTank = Boolean(false);
-var isAdvertiserHealer = Boolean(false);
-var isAdvertiserKey = Boolean(false);
 
 async function modifyWebhook(embed) {
     /*// What are those coming from webhook
@@ -135,7 +134,7 @@ client.on('ready', () => {
 
 client.on('message', async message => {
     // When webhook come get this message, then modify and send webhookToChannelId
-    if (message.channel.id === webhoockFromChannelId) {
+    if (message.channel.id === webhoockFromChannelId && message.author.bot) {
         // Is that message comes from webhook
         if (message.webhookID) {
             // Get webhook post
@@ -148,27 +147,58 @@ client.on('message', async message => {
             try {
                 /*
                 const editEmbed = new Discord.MessageEmbed().addField()
-                    .setDescription('this is the old description');
-                
+                    .setDescription('this is the old description')
+                    .addField({});
+
                 client.channels.cache.get(webhookToChannelId)
                                 .send(newEmbed).then((m) =>
                                     m.edit(newEmbed.setTitle(`NABERRR`)));*/
-
-                client.channels.cache.get(webhookToChannelId)
-                    .send(newEmbed).then((msg) =>
+                await client.channels.cache.get(webhookToChannelId).send(newEmbed)
+                    .then((msg) => {
+                        msg.edit(msg.embeds[0].setFooter('BoostId: ' + msg.id, 'https://bnetcmsus-a.akamaihd.net/cms/template_resource/fh/FHSCSCG9CXOC1462229977849.png')),
                         // Add react to the message
                         msg.react('✅').then(() =>
                             msg.react('732689305805520919'), // DPS -2
                             msg.react('731617839290515516'), // DPS
                             msg.react('731617839596961832'), // TANK
-                            msg.react('731617839370469446')),// HEALER 
-                            );
-                                          
+                            msg.react('731617839370469446'))// HEALER
+                    });           
             } catch (error) {
                 console.log("WEBHOOK POST ERROR: " + error);
             }
         }
     }
+ 
+    if(message.channel.id === webhookToChannelId && message.author.bot){
+        var msg = (await message.fetch()).embeds[0];
+
+        var advertise = await MessageList.find(x => x.message.id == message.id);
+
+        if(advertise == null){
+            // Get advertiser from posted message
+            let advertiser = (await reaction.message.fetch()).embeds[0].fields[0].value;
+            let dpsBoosters = Array();
+            let dpsUsers = Array();
+            let tankBoosters = Array();
+            let tankUsers = Array();
+            let healerBoosters = Array();
+            let healerUsers = Array();
+            let dps2Boosters = Array();
+            let dps2Users = Array();
+            let boosterList = Array();
+
+            let isFull = false;
+            let isComplete = false;
+
+            let adv = new Advertise(reaction, advertiser, isFull, isComplete,
+                dpsUsers, dpsBoosters, tankUsers, tankBoosters, healerUsers, healerBoosters, dps2Users, dps2Boosters,
+                boosterList);
+
+            MessageList.push(adv);
+        }
+    }
+
+    /*
     // When posted new modified message add 
     if (message.channel.id === webhookToChannelId) {
         if (message.embeds[0].title === 'Need Dungeon Booster!') {
@@ -183,11 +213,7 @@ client.on('message', async message => {
                 message.react('731617839596961832'), // TANK
                 message.react('731617839370469446'));// HEALER
         }
-    }
-});
-
-client.on('message', async message => {
-    
+    }*/
 });
 
 async function addDps(advertise, user) {
