@@ -53,6 +53,11 @@ function getRandomArbitrary(min, max) {
     return Math.random() * (max - min) + min;
 }
 
+var isAdvertiserDps = Boolean(false);
+var isAdvertiserTank = Boolean(false);
+var isAdvertiserHealer = Boolean(false);
+var isAdvertiserKey = Boolean(false);
+
 async function modifyWebhook(embed) {
     /*// What are those coming from webhook
     console.log(embed.title + " embed message");
@@ -74,25 +79,52 @@ async function modifyWebhook(embed) {
         .setFooter('BoostId: ', 'https://bnetcmsus-a.akamaihd.net/cms/template_resource/fh/FHSCSCG9CXOC1462229977849.png');
     
         
-    embed.fields.forEach(f => {
-        if(f.name == 'Discord Tag'){
+    embed.fields.forEach(function(item, index, arr) {
+        if(item.name === 'Discord Tag'){
             let users = client.guilds.cache.map(g => g.members.cache.map(u => u.user));
 
             // Find advertiser in guild members
             users[0].forEach( u => {
-                if(u.tag == f.value)
+                if(u.tag == item.value)
                     newEmbed.addField('Advertiser', `<@${u.id}>`, true);
             });
         }
-        else if(f.name == 'Boost Price'){
-            newEmbed.addField(f.name, f.value, true);
-            newEmbed.addField(`Booster Cut %${boosterCut}:`, (parseInt(f.value)/boosterCut), true);
-        } else if (!(f.name == 'Booster Price') || !(f.name == 'Discord Tag')){
-            newEmbed.addField(f.name, f.value, true);
+        else if(item.name === 'Boost Price'){
+            newEmbed.addField(item.name, item.value, true);
+            newEmbed.addField(`Booster Cut %${boosterCut}`, (Math.round(parseInt(item.value)/boosterCut)), true);
+        }
+        else if (item.name === 'Are you gonna join the boost?'){
+            if (item.value === 'Yes'){
+                let next1 = arr[index + 1];
+                let next2 = arr[index + 2];
+                // Tank/Dps/Healer
+                if (next1.name == 'Which class do you wanna join the boost?') {
+                    if (next1.value == 'Dps'){
+                        isAdvertiserDps = true;
+                    }else if(next1.value == 'Tank'){
+                        isAdvertiserTank = true;
+                    }else if(next1.value == 'Healer'){
+                        isAdvertiserHealer = true;
+                    }
+                }
+                if (next2.name === 'Do you have the key?'){
+                    if(next2.value == 'Yes'){
+                        isAdvertiserKey = true;
+                    }
+                }
+            }
+        }// Exclusion filter
+        else if (!(item.name === 'Discord Tag') 
+                && !(item.name === 'Boost Price') 
+                && !(item.name === 'Are you gonna join the boost?')
+                && !(item.name === 'Which class do you wanna join the boost?')
+                && !(item.name === 'Do you have the key?')){
+            newEmbed.addField(item.name, item.value, true);
         }
     })
-    // EMPTY AREA
+    // BOOSTER AREA
     newEmbed.addField('BOOSTERS', '\u200B');
+
     return newEmbed
 }
 
@@ -100,16 +132,10 @@ client.on('ready', () => {
     console.log(`Logged in as ${client.user.tag}!`);
 });
 
-client.once('message', async message => {
-    if (message.channel.id == webhoockFromChannelId){
-        
-    }
-});
 
-// Webhook to embed message
 client.on('message', async message => {
-    // Catch webhooks from webhook-1 channel
-    if (message.channel.id === hookForm) {
+    // When webhook come get this message, then modify and send webhookToChannelId
+    if (message.channel.id === webhoockFromChannelId) {
         // Is that message comes from webhook
         if (message.webhookID) {
             // Get webhook post
@@ -117,35 +143,52 @@ client.on('message', async message => {
             // Get embeds on post
             var embed = new Discord.MessageEmbed(msg.embeds[0]);
             // modify embeds for advertise
-            var newEmbed = modifyWebhook(embed);
+            var newEmbed = await modifyWebhook(embed);
             // Send, new modified message to the specific channel
             try {
-                //messageToChannel.send(newEmbed);
-                client.channels.cache.get(webhookToChannelId).send(newEmbed);
+                /*
+                const editEmbed = new Discord.MessageEmbed().addField()
+                    .setDescription('this is the old description');
+                
+                client.channels.cache.get(webhookToChannelId)
+                                .send(newEmbed).then((m) =>
+                                    m.edit(newEmbed.setTitle(`NABERRR`)));*/
+
+                client.channels.cache.get(webhookToChannelId)
+                    .send(newEmbed).then((msg) =>
+                        // Add react to the message
+                        msg.react('✅').then(() =>
+                            msg.react('732689305805520919'), // DPS -2
+                            msg.react('731617839290515516'), // DPS
+                            msg.react('731617839596961832'), // TANK
+                            msg.react('731617839370469446')),// HEALER 
+                            );
+                                          
             } catch (error) {
-                console.log(newEmbed + " " + error);
+                console.log("WEBHOOK POST ERROR: " + error);
             }
+        }
+    }
+    // When posted new modified message add 
+    if (message.channel.id === webhookToChannelId) {
+        if (message.embeds[0].title === 'Need Dungeon Booster!') {
+            // Modify footer of message for boostId
+            message.edit(message.embeds[0].setFooter('BoostId: ' + message.id, 'https://bnetcmsus-a.akamaihd.net/cms/template_resource/fh/FHSCSCG9CXOC1462229977849.png').add);
+
+
+            // Add react to the message
+            message.react('✅').then(() =>
+                message.react('732689305805520919'), // DPS -2
+                message.react('731617839290515516'), // DPS
+                message.react('731617839596961832'), // TANK
+                message.react('731617839370469446'));// HEALER
         }
     }
 });
 
-// Add react to Embed Message
 client.on('message', async message => {
-    // Add react only specific channel
-    if (message.channel.id === webhookToChannelId) {
-        // Modify footer of message for boostId
-        message.edit(message.embeds[0].setFooter('BoostId: ' + message.id, 'https://bnetcmsus-a.akamaihd.net/cms/template_resource/fh/FHSCSCG9CXOC1462229977849.png'));
-
-        // Add react to the message
-        message.react('✅').then(() =>
-            message.react('732689305805520919'), // DPS -2
-            message.react('731617839290515516'), // DPS
-            message.react('731617839596961832'), // TANK
-            message.react('731617839370469446'));// HEALER
-    }
     
 });
-
 
 async function addDps(advertise, user) {
     //var user = advertise._dpsUsers[0];
