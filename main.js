@@ -6,7 +6,7 @@ const config = require('./config.json');
 const client = new Discord.Client({ partials: ['MESSAGE', 'CHANNEL', 'REACTION'] });
 const boosterCut = 20;
 // webhook messages drops here (channel id)
-const hookForm = "731543421340221521";
+const webhoockFromChannelId = "731543421340221521";
 // routing to booster channel
 const webhookToChannelId = "731523810662154311";
 
@@ -14,8 +14,7 @@ client.login(process.env.DISCORD_TOKEN);
 
 class Advertise {
     _reaction;
-    _message;
-    _user;
+    _advertiser;
     // when full advertise
     _isFull = Boolean(false);
     // when boost done
@@ -30,10 +29,9 @@ class Advertise {
     _healerBoosters = Array();
     _boosterList = Array();
 
-    constructor(reaction, message, user, isFull, isComplete, dpsUsers, dpsBoosters, tankUsers, tankBoosters, healerUsers, healerBoosters, dps2Users, dps2Boosters, boosterList) {
+    constructor(reaction, advertiser, isFull, isComplete, dpsUsers, dpsBoosters, tankUsers, tankBoosters, healerUsers, healerBoosters, dps2Users, dps2Boosters, boosterList) {
         this._reaction = reaction;
-        this._message = message;
-        this._user = user;
+        this._advertiser = advertiser;
         this._isFull = isFull;
         this._isComplete = isComplete;
         this._dpsUsers = dpsUsers;
@@ -102,6 +100,12 @@ client.on('ready', () => {
     console.log(`Logged in as ${client.user.tag}!`);
 });
 
+client.once('message', async message => {
+    if (message.channel.id == webhoockFromChannelId){
+        
+    }
+});
+
 // Webhook to embed message
 client.on('message', async message => {
     // Catch webhooks from webhook-1 channel
@@ -113,7 +117,7 @@ client.on('message', async message => {
             // Get embeds on post
             var embed = new Discord.MessageEmbed(msg.embeds[0]);
             // modify embeds for advertise
-            var newEmbed = await modifyWebhook(embed);
+            var newEmbed = modifyWebhook(embed);
             // Send, new modified message to the specific channel
             try {
                 //messageToChannel.send(newEmbed);
@@ -139,17 +143,19 @@ client.on('message', async message => {
             message.react('731617839596961832'), // TANK
             message.react('731617839370469446'));// HEALER
     }
+    
 });
 
+
 async function addDps(advertise, user) {
-    //var user = await advertise._dpsUsers[0];
-    var reaction = await advertise._reaction;
+    //var user = advertise._dpsUsers[0];
+    var reaction = advertise._reaction;
 
-    if (!await advertise._tankUsers.includes(user) && !await advertise._healerUsers.includes(user)) {
-        if (await advertise._dpsBoosters.length == 0) {
+    if (!advertise._tankUsers.includes(user) && !advertise._healerUsers.includes(user)) {
+        if (advertise._dpsBoosters.length == 0) {
             // Get first user in dpsUsers
-            await advertise._dpsBoosters.push(user);
-            //await advertise._boosterList.push(user);
+            advertise._dpsBoosters.push(user);
+            //advertise._boosterList.push(user);
 
             // TODO might be problem here
             let tmpMsg = (await reaction.message.fetch()).embeds[0];
@@ -161,51 +167,12 @@ async function addDps(advertise, user) {
             await advertise._reaction.message.edit(tmpEmbed);
         }
     }
-    else if (!await advertise._healerUsers.includes(user) && !await advertise._dpsBoosters.includes(user) && !await advertise._tankBoosters.includes(user)) {
+    else if (!advertise._healerUsers.includes(user) && !advertise._dpsBoosters.includes(user) && !advertise._tankBoosters.includes(user)) {
         // TODO Might give error when, dps and tank in same user.
-        if (await advertise._dpsBoosters.length == 0) {
+        if (advertise._dpsBoosters.length == 0) {
             // Get first user in dpsUsers
-            await advertise._dpsBoosters.push(user);
-            //await advertise._boosterList.push(user);
-
-            let tmpMsg = (await reaction.message.fetch()).embeds[0];
-            let tmpEmbed = new Discord.MessageEmbed(tmpMsg);
-
-            // Modified embed message
-            tmpEmbed.fields.push({ name: '<:dps:731617839290515516>', value: `<@${user.id}>`, inline: true });
-            // Send modified embed message
-            await advertise._reaction.message.edit(tmpEmbed);
-        }
-    }
-}
-
-async function addDpsQueue(advertise, user) {
-    // get first place of dpsUser
-    //let user = await advertise._dpsUsers[0];
-    let reaction = await advertise._reaction;
-
-    if (!await advertise._tankUsers.includes(user) && !await advertise._healerUsers.includes(user)) {
-        if (await advertise._dpsBoosters.length == 0) {
-            // Get first user in dpsUsers
-            await advertise._dpsBoosters.push(user);
-            //await advertise._boosterList.push(user);
-
-            // TODO might be problem here
-            let tmpMsg = (await reaction.message.fetch()).embeds[0];
-            let tmpEmbed = new Discord.MessageEmbed(tmpMsg);
-
-            // Modified embed message
-            tmpEmbed.fields.push({ name: '<:dps:731617839290515516>', value: `<@${user.id}>`, inline: true });
-            // Send modified embed message
-            await advertise._reaction.message.edit(tmpEmbed);
-        }
-    }
-    else if (!await advertise._healerUsers.includes(user) && !await advertise._dpsBoosters.includes(user) && !await advertise._tankBoosters.includes(user)) {
-        // TODO Might give error when, dps and tank in same user.
-        if (await advertise._dpsBoosters.length == 0) {
-            // Get first user in dpsUsers
-            await advertise._dpsBoosters.push(user);
-            //await advertise._boosterList.push(user);
+            advertise._dpsBoosters.push(user);
+            //advertise._boosterList.push(user);
 
             let tmpMsg = (await reaction.message.fetch()).embeds[0];
             let tmpEmbed = new Discord.MessageEmbed(tmpMsg);
@@ -219,12 +186,12 @@ async function addDpsQueue(advertise, user) {
 }
 
 async function addTank(advertise, user) {
-    //var user = await advertise._user;
-    var reaction = await advertise._reaction;
-    if (!await advertise._dpsUsers.includes(user) && !await advertise._healerUsers.includes(user)) {
-        if (await advertise._tankBoosters.length == 0) {
+    //var user = advertise._user;
+    var reaction = advertise._reaction;
+    if (!advertise._dpsUsers.includes(user) && !advertise._healerUsers.includes(user)) {
+        if (advertise._tankBoosters.length == 0) {
             // Get first user in tankBoosters
-            await advertise._tankBoosters.push(user);
+            advertise._tankBoosters.push(user);
             //boosterList.push(user);
 
             let tmpMsg = (await reaction.message.fetch()).embeds[0];
@@ -236,49 +203,11 @@ async function addTank(advertise, user) {
             await advertise._reaction.message.edit(tmpEmbed);
         }
     }
-    else if (!await advertise._tankUsers.includes(user) && !await advertise._dpsBoosters.includes(user) && !await advertise._healerBoosters.includes(user)) {
+    else if (!advertise._tankUsers.includes(user) && !advertise._dpsBoosters.includes(user) && !advertise._healerBoosters.includes(user)) {
         // TODO Might give error when, healer and dps in same user.
-        if (await advertise._tankBoosters.length == 0) {
+        if (advertise._tankBoosters.length == 0) {
             // Get first user in tankBoosters
-            await advertise._tankBoosters.push(user);
-            //boosterList.push(user);
-
-            let tmpMsg = (await reaction.message.fetch()).embeds[0];
-            let tmpEmbed = new Discord.MessageEmbed(tmpMsg);
-
-            // Modified embed message
-            tmpEmbed.fields.push({ name: '<:tank:731617839596961832>', value: `<@${user.id}>`, inline: true });
-            // Send modified embed message
-            await advertise._reaction.message.edit(tmpEmbed);
-        }
-    }
-}
-
-async function addTankQueue(advertise, user) {
-    // get first place of tankUser
-    //let user = await advertise._tankUsers[0];
-    let reaction = await advertise._reaction;
-
-    if (!await advertise._dpsUsers.includes(user) && !await advertise._healerUsers.includes(user)) {
-        if (await advertise._tankBoosters.length == 0) {
-            // Get first user in tankBoosters
-            await advertise._tankBoosters.push(user);
-            //boosterList.push(user);
-
-            let tmpMsg = (await reaction.message.fetch()).embeds[0];
-            let tmpEmbed = new Discord.MessageEmbed(tmpMsg);
-
-            // Modified embed message
-            tmpEmbed.fields.push({ name: '<:tank:731617839596961832>', value: `<@${user.id}>`, inline: true });
-            // Send modified embed message
-            await advertise._reaction.message.edit(tmpEmbed);
-        }
-    }
-    else if (!await advertise._tankUsers.includes(user) && !await advertise._dpsBoosters.includes(user) && !await advertise._healerBoosters.includes(user)) {
-        // TODO Might give error when, healer and dps in same user.
-        if (await advertise._tankBoosters.length == 0) {
-            // Get first user in tankBoosters
-            await advertise._tankBoosters.push(user);
+            advertise._tankBoosters.push(user);
             //boosterList.push(user);
 
             let tmpMsg = (await reaction.message.fetch()).embeds[0];
@@ -293,12 +222,12 @@ async function addTankQueue(advertise, user) {
 }
 
 async function addHealer(advertise, user) {
-    var user = await advertise._user;
-    var reaction = await advertise._reaction;
-    if (!await advertise._dpsUsers.includes(user) && !await advertise._tankUsers.includes(user)) {
-        if (await advertise._healerBoosters.length == 0) {
+    //var user = advertise._user;
+    var reaction = advertise._reaction;
+    if (!advertise._dpsUsers.includes(user) && !advertise._tankUsers.includes(user)) {
+        if (advertise._healerBoosters.length == 0) {
             // Get first user in healerBoosters
-            await advertise._healerBoosters.push(user);
+            advertise._healerBoosters.push(user);
             //boosterList.push(user);
 
             let tmpMsg = (await reaction.message.fetch()).embeds[0];
@@ -310,11 +239,11 @@ async function addHealer(advertise, user) {
             await advertise._reaction.message.edit(tmpEmbed);
         }
     }
-    else if (!await advertise._tankUsers.includes(user) && !await advertise._dpsBoosters.includes(user) && !await advertise._healerBoosters.includes(user)) {
+    else if (!advertise._tankUsers.includes(user) && !advertise._dpsBoosters.includes(user) && !advertise._healerBoosters.includes(user)) {
         // TODO Might give error when, healer and dps in same user.
-        if (await advertise._healerBoosters.length == 0) {
+        if (advertise._healerBoosters.length == 0) {
             // Get first user in healerBoosters
-            await advertise._healerBoosters.push(user);
+            advertise._healerBoosters.push(user);
             //boosterList.push(user);
 
             let tmpMsg = (await reaction.message.fetch()).embeds[0];
@@ -326,64 +255,11 @@ async function addHealer(advertise, user) {
             await advertise._reaction.message.edit(tmpEmbed);
         }
     }
-    else if (!await advertise._dpsUsers.includes(user) && !await advertise._tankBoosters.includes(user) && !await advertise._healerBoosters.includes(user)) {
+    else if (!advertise._dpsUsers.includes(user) && !advertise._tankBoosters.includes(user) && !advertise._healerBoosters.includes(user)) {
         // TODO Might give error when, healer and dps in same user.
-        if (await advertise._healerBoosters.length == 0) {
+        if (advertise._healerBoosters.length == 0) {
             // Get first user in healerBoosters
-            await advertise._healerBoosters.push(user);
-
-            let tmpMsg = (await reaction.message.fetch()).embeds[0];
-            let tmpEmbed = new Discord.MessageEmbed(tmpMsg);
-
-            // Modified embed message
-            tmpEmbed.fields.push({ name: '<:healer:731617839370469446>', value: `<@${user.id}>`, inline: true });
-            // Send modified embed message
-            await advertise._reaction.message.edit(tmpEmbed);
-        }
-    }
-}
-
-async function addHealerQueue(advertise, user) {
-    // get first place of tankUser
-    //let user = await advertise._healerUsers[0];
-    let reaction = await advertise._reaction;
-
-    if (!await advertise._dpsUsers.includes(user) && !await advertise._tankUsers.includes(user)) {
-        if (await advertise._healerBoosters.length == 0) {
-            // Get first user in healerBoosters
-            await advertise._healerBoosters.push(user);
-            //boosterList.push(user);
-
-            let tmpMsg = (await reaction.message.fetch()).embeds[0];
-            let tmpEmbed = new Discord.MessageEmbed(tmpMsg);
-
-            // Modified embed message
-            tmpEmbed.fields.push({ name: '<:healer:731617839370469446>', value: `<@${user.id}>`, inline: true });
-            // Send modified embed message
-            await advertise._reaction.message.edit(tmpEmbed);
-        }
-    }
-    else if (!await advertise._tankUsers.includes(user) && !await advertise._dpsBoosters.includes(user) && !await advertise._healerBoosters.includes(user)) {
-        // TODO Might give error when, healer and dps in same user.
-        if (await advertise._healerBoosters.length == 0) {
-            // Get first user in healerBoosters
-            await advertise._healerBoosters.push(user);
-            //boosterList.push(user);
-
-            let tmpMsg = (await reaction.message.fetch()).embeds[0];
-            let tmpEmbed = new Discord.MessageEmbed(tmpMsg);
-
-            // Modified embed message
-            tmpEmbed.fields.push({ name: '<:healer:731617839370469446>', value: `<@${user.id}>`, inline: true });
-            // Send modified embed message
-            await advertise._reaction.message.edit(tmpEmbed);
-        }
-    }
-    else if (!await advertise._dpsUsers.includes(user) && !await advertise._tankBoosters.includes(user) && !await advertise._healerBoosters.includes(user)) {
-        // TODO Might give error when, healer and dps in same user.
-        if (await advertise._healerBoosters.length == 0) {
-            // Get first user in healerBoosters
-            await advertise._healerBoosters.push(user);
+            advertise._healerBoosters.push(user);
 
             let tmpMsg = (await reaction.message.fetch()).embeds[0];
             let tmpEmbed = new Discord.MessageEmbed(tmpMsg);
@@ -397,13 +273,13 @@ async function addHealerQueue(advertise, user) {
 }
 
 async function addDps2(advertise, user) {
-    //var user = await advertise._user;
-    var reaction = await advertise._reaction;
-    if (!await advertise._tankUsers.includes(user) && !await advertise._healerUsers.includes(user) && !await advertise._dpsUsers.includes(user)) {
-        if (await advertise._dps2Boosters.length == 0) {
+    //var user = advertise._user;
+    var reaction = advertise._reaction;
+    if (!advertise._tankUsers.includes(user) && !advertise._healerUsers.includes(user) && !advertise._dpsUsers.includes(user)) {
+        if (advertise._dps2Boosters.length == 0) {
             // Get first user in dpsUsers
-            await advertise._dps2Boosters.push(user);
-            //await advertise._boosterList.push(user);
+            advertise._dps2Boosters.push(user);
+            //advertise._boosterList.push(user);
 
             // TODO might be problem here
             let tmpMsg = (await reaction.message.fetch()).embeds[0];
@@ -415,49 +291,12 @@ async function addDps2(advertise, user) {
             await advertise._reaction.message.edit(tmpEmbed);
         }
     }
-    else if (!await advertise._healerUsers.includes(user) && !await advertise._dps2Boosters.includes(user) && !await advertise._tankBoosters.includes(user)) {
+    else if (!advertise._healerUsers.includes(user) && !advertise._dps2Boosters.includes(user) && !advertise._tankBoosters.includes(user)) {
         // TODO Might give error when, dps and tank in same user.
-        if (await advertise._dps2Boosters.length == 0) {
+        if (advertise._dps2Boosters.length == 0) {
             // Get first user in dpsUsers
-            await advertise._dps2Boosters.push(user);
-            //await advertise._boosterList.push(user);
-
-            let tmpMsg = (await reaction.message.fetch()).embeds[0];
-            let tmpEmbed = new Discord.MessageEmbed(tmpMsg);
-
-            // Modified embed message
-            tmpEmbed.fields.push({ name: '<:dps2:732689305805520919>', value: `<@${user.id}>`, inline: true });
-            // Send modified embed message
-            await advertise._reaction.message.edit(tmpEmbed);
-        }
-    }
-}
-
-async function addDps2Queue(advertise, user) {
-    //var user = await advertise._dps2Users[0];
-    var reaction = await advertise._reaction;
-    if (!await advertise._tankUsers.includes(user) && !await advertise._healerUsers.includes(user)) {
-        if (await advertise._dps2Boosters.length == 0) {
-            // Get first user in dpsUsers
-            await advertise._dps2Boosters.push(user);
-            //await advertise._boosterList.push(user);
-
-            // TODO might be problem here
-            let tmpMsg = (await reaction.message.fetch()).embeds[0];
-            let tmpEmbed = new Discord.MessageEmbed(tmpMsg);
-
-            // Modified embed message
-            tmpEmbed.fields.push({ name: '<:dps2:732689305805520919>', value: `<@${user.id}>`, inline: true });
-            // Send modified embed message
-            await advertise._reaction.message.edit(tmpEmbed);
-        }
-    }
-    else if (!await advertise._healerUsers.includes(user) && !await advertise._dps2Boosters.includes(user) && !await advertise._tankBoosters.includes(user)) {
-        // TODO Might give error when, dps and tank in same user.
-        if (await advertise._dps2Boosters.length == 0) {
-            // Get first user in dpsUsers
-            await advertise._dps2Boosters.push(user);
-            //await advertise._boosterList.push(user);
+            advertise._dps2Boosters.push(user);
+            //advertise._boosterList.push(user);
 
             let tmpMsg = (await reaction.message.fetch()).embeds[0];
             let tmpEmbed = new Discord.MessageEmbed(tmpMsg);
@@ -472,12 +311,12 @@ async function addDps2Queue(advertise, user) {
 
 async function removeDps(advertise, user) {
     //user = advertise._user;
-    reaction = await advertise._reaction;
+    reaction = advertise._reaction;
 
-    if (await advertise._dpsUsers.includes(user)) {
+    if (advertise._dpsUsers.includes(user)) {
         //let tmpUser = user;
         //let newUser = dpsUsers[0];
-        if (await advertise._dpsBoosters.length == 1) {
+        if (advertise._dpsBoosters.length == 1) {
             let tmpMsg = (await reaction.message.fetch()).embeds[0];
             let tmpEmbed = new Discord.MessageEmbed(tmpMsg);
 
@@ -496,13 +335,13 @@ async function removeDps(advertise, user) {
             await advertise._reaction.message.edit(tmpEmbed);
 
             // Remove user from dpsBooster
-            let tmpUser = await advertise._dpsBoosters.shift();
+            let tmpUser = advertise._dpsBoosters.shift();
             // Remove user from dpsUsers
             // Find in healer user shifted healer booster
             // Delete tmpUser from dpsUsers
-            let idx = await advertise._dpsUsers.indexOf(tmpUser);
+            let idx = advertise._dpsUsers.indexOf(tmpUser);
             if (idx > -1) {
-                await advertise._dpsUsers.splice(idx, 1);
+                advertise._dpsUsers.splice(idx, 1);
             }
             /*
             // Remove user from boosterList
@@ -513,36 +352,36 @@ async function removeDps(advertise, user) {
 
             // Add first user at dpsUser queue
             // TODO Send who is waiting dps queue
-            if (await advertise._dpsUsers.length > 0) {
-                await addDpsQueue(advertise, await advertise._dpsUsers[0]);
+            if (advertise._dpsUsers.length > 0) {
+                await addDps(advertise, advertise._dpsUsers[0]);
             }
 
             // If user choosed another reactions when release dps then add to him
-            if (await advertise._tankUsers.includes(user) && await advertise._tankBoosters.length == 0) {
+            if (advertise._tankUsers.includes(user) && advertise._tankBoosters.length == 0) {
                 // Check the user is in another emote
-                if (!await advertise._healerUsers.includes(user)) {
+                if (!advertise._healerUsers.includes(user)) {
                     await addTank(advertise, user);
                 }
             }
             // If user choosed another reactions when release healer then add to him
 
-            if (await advertise._healerUsers.includes(user) && await advertise._healerBoosters.length == 0) {
+            if (advertise._healerUsers.includes(user) && advertise._healerBoosters.length == 0) {
                 // Check the user is in another emote
-                if (!await advertise._tankUsers.includes(user)) {
+                if (!advertise._tankUsers.includes(user)) {
                     await addHealer(advertise, user);
                 }
             }
 
-            if (await advertise._tankUsers.includes(user) && await advertise._healerUsers.includes(user)) {
-                if (await advertise._tankBoosters.length == 0 && await advertise._healerBoosters.length == 0) {
+            if (advertise._tankUsers.includes(user) && advertise._healerUsers.includes(user)) {
+                if (advertise._tankBoosters.length == 0 && advertise._healerBoosters.length == 0) {
                     await addHealer(advertise, user);
                 }
             }
         }
 
         // User is waiting in Queue, release him before assign booster
-        if (await advertise._dpsUsers.length > 0) {
-            await advertise._dpsUsers.forEach(function (item, index, object) {
+        if (advertise._dpsUsers.length > 0) {
+            advertise._dpsUsers.forEach(function (item, index, object) {
                 if (item === user) {
                     object.splice(index, 1);
                 }
@@ -553,12 +392,12 @@ async function removeDps(advertise, user) {
 
 async function removeTank(advertise, user) {
     //user = advertise._user;
-    reaction = await advertise._reaction;
+    reaction = advertise._reaction;
 
-    if (await advertise._tankUsers.includes(user)) {
+    if (advertise._tankUsers.includes(user)) {
         //let tmpUser = user;
         //let newUser = dpsUsers[0];
-        if (await advertise._tankBoosters.length == 1) {
+        if (advertise._tankBoosters.length == 1) {
             let tmpMsg = (await reaction.message.fetch()).embeds[0];
             let tmpEmbed = new Discord.MessageEmbed(tmpMsg);
 
@@ -577,13 +416,13 @@ async function removeTank(advertise, user) {
             await advertise._reaction.message.edit(tmpEmbed);
 
             // Remove user from tankBooster
-            let tmpUser = await advertise._tankBoosters.shift();
+            let tmpUser = advertise._tankBoosters.shift();
             // Remove user from tankBooster 
             // Find in healer user shifted healer booster
             // Delete tmpUser from tankUsers
-            let idx = await advertise._tankUsers.indexOf(tmpUser);
+            let idx = advertise._tankUsers.indexOf(tmpUser);
             if (idx > -1) {
-                await advertise._tankUsers.splice(idx, 1);
+                advertise._tankUsers.splice(idx, 1);
             }
             /*
             // Remove user from boosterList
@@ -593,43 +432,37 @@ async function removeTank(advertise, user) {
             }*/
 
             // Add first user at tankUser queue
-            if (await advertise._tankUsers.length > 0) {
-                await addTankQueue(advertise, await advertise._tankUsers[0]);
+            if (advertise._tankUsers.length > 0) {
+                await addTank(advertise, advertise._tankUsers[0]);
             }
 
-            // If user choosed another reactions when release dps then add to him
-            if (await advertise._dpsUsers.includes(user) && await advertise._dpsBoosters.length == 0) {
-                // Check the user is in another emote
-                if (!await advertise._healerUsers.includes(user) && !await advertise._tankUsers.includes(user)) {
-                    await addDps(advertise, user);
-                }
-            }
-            else if (await advertise._dps2Users.includes(user) && await advertise._dps2Boosters.length == 0) {
-                // Check the user is in another emote
-                if (!await advertise._healerUsers.includes(user) &&!await advertise._tankUsers.includes(user)) {
-                    await addDps2(advertise, user);
-                }
-            }
-
-            // If user choosed another reactions when release healer then add to him: HEALER VS DPS => HEALER > DPS
-            if (await advertise._healerUsers.includes(user) && await advertise._healerBoosters.length == 0) {
-                // Check the user is in another emote
-                if (!await advertise._dpsUsers.includes(user) && !await advertise._dpsUsers2.includes(user)) {
+            // User select DPS or DPS2
+            if(advertise._dpsUsers.includes(user) || advertise._dps2Users.includes(user)){
+                // Also selected 3rd HEALER
+                if(advertise._healerUsers.includes(user) && advertise._healerBoosters.length == 0){
                     await addHealer(advertise, user);
                 }
-            }
 
-            // When user select more than two react, prefer healer: HEALER VS DPS => HEALER > DPS
-            if (await advertise._healerUsers.includes(user) && await advertise._dpsUsers.includes(user) && await advertise._dps2Users.includes(user)) {
-                if (await advertise._healerBoosters.length == 0 && await advertise._dpsBoosters.length == 0 && await advertise._dps2Boosters.length == 0) {
+                // Which one is closer to the queue
+                // Select one of them DPS-DPS2
+                if (advertise._dpsUsers.indexOf(user) <= advertise._dps2Users.indexOf(user)){
+                    if (advertise._dpsBoosters.length == 0)
+                        await addDps(advertise, user);
+                }else{
+                    if (advertise._dps2Boosters.length == 0) 
+                        await addDps2(advertise, user);
+                } 
+            }// Only selected HEALER
+            else if (advertise._healerUsers.includes(user)){
+                if (advertise._healerBoosters.length == 0) {
                     await addHealer(advertise, user);
                 }
             }
         }
 
         // User is waiting in Queue, release him before assign booster
-        if (await advertise._tankUsers.length > 0) {
-            await advertise._tankUsers.forEach(function (item, index, object) {
+        if (advertise._tankUsers.length > 0) {
+            advertise._tankUsers.forEach(function (item, index, object) {
                 if (item === user) {
                     object.splice(index, 1);
                 }
@@ -640,12 +473,12 @@ async function removeTank(advertise, user) {
 
 async function removeHealer(advertise, user) {
     //user = advertise._user;
-    reaction = await advertise._reaction;
+    reaction = advertise._reaction;
 
-    if (await advertise._healerUsers.includes(user)) {
+    if (advertise._healerUsers.includes(user)) {
         //let tmpUser = user;
         //let newUser = dpsUsers[0];
-        if (await advertise._healerBoosters.length == 1) {
+        if (advertise._healerBoosters.length == 1) {
             let tmpMsg = (await reaction.message.fetch()).embeds[0];
             let tmpEmbed = new Discord.MessageEmbed(tmpMsg);
 
@@ -653,7 +486,7 @@ async function removeHealer(advertise, user) {
             let temp = new Discord.MessageEmbed().fields;
             temp.push({ name: '<:healer:731617839370469446>', value: `<@${user.id}>`, inline: true });
 
-            for (let i = 10; i < tmpEmbed.fields.length; i++) {
+            for (let i = 9; i < tmpEmbed.fields.length; i++) {
                 if (tmpEmbed.fields[i].value == temp[0].value && tmpEmbed.fields[i].name == temp[0].name) {
                     tmpEmbed.fields.splice(i, 1);
                     i--;
@@ -664,13 +497,13 @@ async function removeHealer(advertise, user) {
             await advertise._reaction.message.edit(tmpEmbed);
 
             // Remove user from healerBooster
-            let tmpUser = await advertise._healerBoosters.shift();
+            let tmpUser = advertise._healerBoosters.shift();
             // Remove user from healerUsers 
             // Find in healer user shifted healer booster
             // Delete tmpUser from healerusers
-            let idx = await advertise._healerUsers.indexOf(tmpUser);
+            let idx = advertise._healerUsers.indexOf(tmpUser);
             if (idx > -1) {
-                await advertise._healerUsers.splice(idx, 1);
+                advertise._healerUsers.splice(idx, 1);
             }
             /*
             // Remove user from boosterList
@@ -680,49 +513,44 @@ async function removeHealer(advertise, user) {
             }*/
 
             // Add first user at healerUser waiting at queue
-            if (await advertise._healerUsers.length > 0) {
-                await addHealerQueue(advertise, await advertise._healerUsers[0]);
+            if (advertise._healerUsers.length > 0) {
+                await addHealer(advertise, advertise._healerUsers[0]);
             }
 
-            // If user choosed another reactions when release dps then add to him
-            if (await advertise._dpsUsers.includes(user) && await advertise._dpsBoosters.length == 0) {
-                // Check the user is in another emote
-                if (await advertise._tankUsers.includes(user)) {
-                    await addDps(advertise, user);
-                }
-            }
-            else if (await advertise._dps2Users.includes(user) && await advertise._dps2Boosters.length == 0) {
-                // Check the user is in another emote
-                if (await advertise._tankUsers.includes(user)) {
-                    await addDps2(advertise, user);
-                }
-            }
-
-            // If user choosed another reactions when release tank then add to him
-            if (await advertise._tankUsers.includes(user) && await advertise._tankBoosters.length == 0) {
-                // Check the user is in another emote
-                if (!await advertise._dpsUsers.includes(user)) {
-                    await addTank(advertise, user);
-                }
-            }
-
-            // When user select more than two react, prefer dps
-            if (await advertise._tankUsers.includes(user) && await advertise._dpsUsers.includes(user) || await advertise._dps2Users.includes(user)) {
-                if (await advertise._tankBoosters.length == 0 && await advertise._dpsBoosters.length == 0 && await advertise._dps2Boosters.length == 0) {
-                    // check which dps is more empty
-                    if (await advertise._dpsUsers.length <= await advertise._dps2Users.length) {
-                        await addDps2(advertise, user);
-                    } else {
+            // If user select TANK
+            if(advertise._tankUsers.includes(user)){
+                // If user select TANK AND DPS/DPS2 prefer DPS/DPS2
+                if(advertise._dpsUsers.includes((user) || advertise._dps2Users.includes(user))){
+                    if(advertise._dpsUsers.includes(user) && advertise._dpsBoosters.length == 0){
                         await addDps(advertise, user);
                     }
-
+                    else if (advertise._dps2Users.includes(user) && advertise._dps2Boosters.length == 0) {
+                        await addDps2(advertise, user);
+                    }
+                }
+                else {
+                    if (!advertise._dpsUsers.includes(user) || !advertise._dps2Users.includes(user)) {
+                        if (advertise._tankBoosters.length == 0 && advertise._dpsBoosters.length == 0 && advertise._dps2Boosters.length == 0) {
+                            await addTank(advertise, user);
+                        }
+                    }
+                } 
+            }// If user not select TANK
+            else if (!advertise._tankUsers.includes(user)){
+                // Which one is better select DPS/DPS2
+                if (advertise._dpsUsers.includes(user) && advertise._dpsBoosters.length == 0) {
+                    await addDps(advertise, user);
+                }
+                else if (advertise._dps2Users.includes(user) && advertise._dps2Boosters.length == 0) {
+                    await addDps2(advertise, user);
                 }
             }
         }
 
+
         // User is waiting in Queue, release him before assign booster
-        if (await advertise._healerUsers.length > 0) {
-            await advertise._healerUsers.forEach(function (item, index, object) {
+        if (advertise._healerUsers.length > 0) {
+            advertise._healerUsers.forEach(function (item, index, object) {
                 if (item === user) {
                     object.splice(index, 1);
                 }
@@ -732,13 +560,13 @@ async function removeHealer(advertise, user) {
 }
 
 async function removeDps2(advertise, user) {
-    //user = await advertise._user;
-    reaction = await advertise._reaction;
+    //user = advertise._user;
+    reaction = advertise._reaction;
 
-    if (await advertise._dps2Users.includes(user)) {
+    if (advertise._dps2Users.includes(user)) {
         //let tmpUser = user;
         //let newUser = dpsUsers[0];
-        if (await advertise._dps2Boosters.length == 1) {
+        if (advertise._dps2Boosters.length == 1) {
             let tmpMsg = (await reaction.message.fetch()).embeds[0];
             let tmpEmbed = new Discord.MessageEmbed(tmpMsg);
 
@@ -757,65 +585,78 @@ async function removeDps2(advertise, user) {
             await advertise._reaction.message.edit(tmpEmbed);
 
             // Remove user from dpsBooster
-            let tmpUser = await advertise._dps2Boosters.shift();
+            let tmpUser = advertise._dps2Boosters.shift();
             // Remove user from dpsUsers
             // Find in healer user shifted healer booster
             // Delete tmpUser from dpsUsers
-            let idx = await advertise._dps2Users.indexOf(tmpUser);
+            let idx = advertise._dps2Users.indexOf(tmpUser);
             if (idx > -1) {
-                await advertise._dps2Users.splice(idx, 1);
+                advertise._dps2Users.splice(idx, 1);
             }
             /*
             // Remove user from boosterList
-            idx = await advertise._boosterList.indexOf(tmpUser);
+            idx = advertise._boosterList.indexOf(tmpUser);
             if (idx > -1) {
-                await advertise._boosterList.splice(idx, 1);
+                advertise._boosterList.splice(idx, 1);
             }*/
 
             // Add first user at dpsUser queue
-            // TODO Send who is waiting dps queue
-            if (await advertise._dps2Users.length > 0) {
-                await addDps2Queue(advertise, await advertise._dpsUsers[0]);
+            // TODO Send who is waiting dps2 queue
+            if (advertise._dps2Users.length > 0) {
+                await addDps2(advertise, advertise._dpsUsers[0]);
             }
-
-            // If user choosed another reactions when release dps then add to him
-            if (await advertise._tankUsers.includes(user) && await advertise._tankBoosters.length == 0) {
-                // Check the user is in another emote
-                if (!await advertise._healerUsers.includes(user)) {
-                    await addTank(advertise, user);
+                       
+            if(advertise._tankUsers.includes(user)){
+                if(advertise._healerUsers.includes(user) && advertise._dpsUsers.includes(user)){
+                    if (advertise._healerUsers.length == 0)
+                        await addHealer(advertise, user);
+                }// TODO DPS/DPS2 reaction doesnt work perfectly
+                else if(advertise._dpsUsers.includes(user)){
+                    if (advertise._dpsUsers.length == 0)
+                        await addDps(advertise, user);
+                }
+                else{
+                    if(advertise._tankUsers.length == 0)
+                        await addTank(advertise, user);
                 }
             }
-            // If user choosed another reactions when release healer then add to him
-
-            if (await advertise._healerUsers.includes(user) && await advertise._healerBoosters.length == 0) {
-                // Check the user is in another emote
-                if (!await advertise._tankUsers.includes(user)) {
-                    await addHealer(advertise, user);
-                }
-            }
-
-            if (await advertise._tankUsers.includes(user) && await advertise._healerUsers.includes(user)) {
-                if (await advertise._tankBoosters.length == 0 && await advertise._healerBoosters.length == 0) {
-                    await addHealer(advertise, user);
+            else if (!advertise._tankUsers.includes(user)) {
+                if (advertise._healerUsers.includes(user) && advertise._dpsUsers.includes(user)) {
+                    if (advertise._healerUsers.length == 0)
+                        await addHealer(advertise, user);
+                }// TODO DPS/DPS2 reaction doesnt work perfectly
+                else if (advertise._dpsUsers.includes(user)) {
+                    if (advertise._dpsUsers.length == 0)
+                        await addDps(advertise, user);
                 }
             }
         }
 
         // User is waiting in Queue, release him before assign booster
-        if (await advertise._dps2Users.length > 0) {
-            await advertise._dps2Users.forEach(function (item, index, object) {
+        if (advertise._dps2Users.length > 0) {
+            advertise._dps2Users.forEach(function (item, index, object) {
                 if (item === user) {
                     object.splice(index, 1);
                 }
             });
         }
+
     }
 }
 
 client.on('messageReactionAdd', async (reaction, user) => {
+    if(user.bot){
+        
+    }
+
     if (!user.bot) {
+        // Find which advertise reacted
+        var currAdv = await MessageList.find(x => x._reaction.message.id == reaction.message.id);
+
         // Is advertise created before, if not go inside
-        if (!await MessageList.find(x => x._message.id == reaction.message.id)) {
+        if (!currAdv) {
+            // Get advertiser from posted message
+            let advertiser = (await reaction.message.fetch()).embeds[0].fields[0].value;
             let dpsBoosters = Array();
             let dpsUsers = Array();
             let tankBoosters = Array();
@@ -825,70 +666,71 @@ client.on('messageReactionAdd', async (reaction, user) => {
             let dps2Boosters = Array();
             let dps2Users = Array();
             let boosterList = Array();
+
             let isFull = false;
             let isComplete = false;
-            let adv = new Advertise(reaction, reaction.message, user, isFull, isComplete,
+
+            let adv = new Advertise(reaction, advertiser, isFull, isComplete,
                 dpsUsers, dpsBoosters, tankUsers, tankBoosters, healerUsers, healerBoosters, dps2Users, dps2Boosters,
                 boosterList);
 
             MessageList.push(adv);
         }
 
-        // find which advertise reacted
-        var currAdv = await MessageList.find(x => x._message.id == reaction.message.id);
-        // change the user
-        currAdv._user = user;
-
+        currAdv = await MessageList.find(x => x._reaction.message.id == reaction.message.id);
+        let advertiser = currAdv._advertiser;
         if (currAdv) {
+            // Dps Queue
             if (reaction.emoji.id === '731617839290515516') {
-
                 // if reacted user does not exist in dpsUsers, avoid clone
                 if (!currAdv._dpsUsers.includes(user) && !currAdv._dps2Users.includes(user)) {
                     // if booster is already take the any role boost, put new user front of him
-                    if ((currAdv._dpsBoosters[0]) == (currAdv._tankUsers[0] || currAdv._healerUsers[0] || currAdv._dps2Users[0])) {
-                        currAdv._dpsUsers.unshift(user);
+                    if (currAdv._dpsBoosters[0] == (currAdv._tankUsers[0] || currAdv._healerUsers[0] || currAdv._dps2Users[0])) {
+                        await currAdv._dpsUsers.unshift(user);
                     }
                     else {
-                        currAdv._dpsUsers.push(user);
+                        await currAdv._dpsUsers.push(user);
                     }
                     await addDps(currAdv, currAdv._dpsUsers[0]);
                 }
-            }   // Tank Queue
-            else if (reaction.emoji.id === '731617839596961832') {
-                // if reacted user does not exist in tankUsers, avoid clone
-                if (!currAdv._tankUsers.includes(user)) {
-                    if ((currAdv._tankBoosters[0]) == (currAdv._dpsUsers[0] || currAdv._healerUsers[0] || currAdv._dps2Users[0])) {
-                        currAdv._tankUsers.unshift(user);
-                    }
-                    else {
-                        currAdv._tankUsers.push(user);
-                    }
-                    await addTank(currAdv, currAdv._tankUsers[0]);
-                }
-            }  // Healer Queue
-            else if (reaction.emoji.id === '731617839370469446') {
-                // if reacted user does not exist in healerUsers, avoid clone
-                if (!currAdv._healerUsers.includes(user)) {
-                    if ((currAdv._healerBoosters[0]) == (currAdv._dpsUsers[0] || currAdv._tankUsers[0] || currAdv._dps2Users[0] )) {
-                        currAdv._healerUsers.unshift(user);
-                    } else {
-                        currAdv._healerUsers.push(user);
-                    }
-                    await addHealer(currAdv, currAdv._healerUsers[0]);
-                }
-            }
-            // Dps 2 Queue
+            }// Dps 2 Queue
             else if (reaction.emoji.id === '732689305805520919') {
                 // if reacted user does not exist in healerUsers, avoid clone
-                if (!currAdv._dpsUsers.includes(user) || !currAdv._dps2Users.includes(user)) {
-                    if ((currAdv._dps2Boosters[0]) == (currAdv._dpsUsers[0] || currAdv._tankUsers[0] || currAdv._healerUsers[0])) {
-                        currAdv._dps2Users.unshift(user);
+                if (!currAdv._dps2Users.includes(user) && !currAdv._dpsUsers.includes(user)) {
+                    if (currAdv._dps2Boosters[0] == (currAdv._dpsUsers[0] || currAdv._tankUsers[0] || currAdv._healerUsers[0])) {
+                        await currAdv._dps2Users.unshift(user);
                     }
                     else {
-                        currAdv._dps2Users.push(user);
+                        await currAdv._dps2Users.push(user);
                     }
                     await addDps2(currAdv, currAdv._dps2Users[0]);
                 }
+            }// Tank Queue
+            else if (reaction.emoji.id === '731617839596961832') {
+                // if reacted user does not exist in tankUsers, avoid clone
+                if (!currAdv._tankUsers.includes(user)) {
+                    if (currAdv._tankBoosters[0] == (currAdv._dpsUsers[0] || currAdv._healerUsers[0] || currAdv._dps2Users[0])) {
+                        await currAdv._tankUsers.unshift(user);
+                    }
+                    else {
+                        await currAdv._tankUsers.push(user);
+                    }
+                    await addTank(currAdv, currAdv._tankUsers[0]);
+                }
+            }// Healer Queue
+            else if (reaction.emoji.id === '731617839370469446') {
+                // if reacted user does not exist in healerUsers, avoid clone
+                if (!currAdv._healerUsers.includes(user)) {
+                    if (currAdv._healerBoosters[0] == (currAdv._dpsUsers[0] || currAdv._tankUsers[0] || currAdv._dps2Users[0] )) {
+                        await currAdv._healerUsers.unshift(user);
+                    } else {
+                        await currAdv._healerUsers.push(user);
+                    }
+                    await addHealer(currAdv, currAdv._healerUsers[0]);
+                }
+            }// Only advertiser can react, when the boos complete!
+            else if (reaction.emoji.name === '✅' && (currAdv._advertiser == `<@${user.id}>`)){
+                console.log(`You're a Advertiser!`);
             }
         }
     }
@@ -896,34 +738,32 @@ client.on('messageReactionAdd', async (reaction, user) => {
 
 client.on('messageReactionRemove', async (reaction, user) => {
     
-    try {
-        var currAdv = await MessageList.find(x => x._message.id == reaction.message.id);
-        
-        // find which advertise reacted
-        if (currAdv) {
-            // DPS Boosters
-            if (reaction.emoji.id === '731617839290515516' && !user.bot) {
-                if (reaction.message.id == currAdv._message.id) {
-                    await removeDps(currAdv, user);
-                }
-            } // Tank Boosters
-            else if (reaction.emoji.id === '731617839596961832' && !user.bot) {
-                if (reaction.message.id == currAdv._message.id) {
-                    await removeTank(currAdv, user);
-                }
-            } // Healer Boosters
-            else if (reaction.emoji.id === '731617839370469446' && !user.bot) {
-                if (reaction.message.id == currAdv._message.id) {
-                    await removeHealer(currAdv, user);
-                }
+
+    var currAdv = await MessageList.find(x => x._reaction.message.id == reaction.message.id);
+    
+    // find which advertise reacted
+    if (currAdv) {
+        // DPS Boosters
+
+        if (reaction.emoji.id === '731617839290515516') {
+            if (reaction.message.id == currAdv._reaction.message.id) {
+                await removeDps(currAdv, user);
             }
-            else if (reaction.emoji.id === '732689305805520919' && !user.bot) {
-                if (reaction.message.id == currAdv._message.id) {
-                    await removeDps2(currAdv, user);
-                }
+        }// DPS2 Boosters
+        else if (reaction.emoji.id === '732689305805520919') {
+            if (reaction.message.id == currAdv._reaction.message.id) {
+                await removeDps2(currAdv, user);
+            }
+        } // Tank Boosters
+        else if (reaction.emoji.id === '731617839596961832') {
+            if (reaction.message.id == currAdv._reaction.message.id) {
+                await removeTank(currAdv, user);
+            }
+        } // DPS2 Boosters
+        else if (reaction.emoji.id === '731617839370469446') {
+            if (reaction.message.id == currAdv._reaction.message.id) {
+                await removeHealer(currAdv, user);
             }
         }
-    } catch (error) {
-        console.log(`Advertise doesn't exits in system! ${error}`);
     }
 });
