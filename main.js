@@ -12,63 +12,65 @@ const webhookToChannelId = "731523810662154311";
 
 client.login(process.env.DISCORD_TOKEN);
 
+var MessageList = Array();
+
 class Advertise {
     _message;
     _advertiser;
 
     // when advertise full
-    _isFull;
+    _isFull = Boolean(false);
     // when advertise done
-    _isComplete;
+    _isComplete = Boolean(false);
     // when advertise canceled
-    _isCanceled;
+    _isCanceled = Boolean(false);
 
-    _isDpsKey;
+    _isDpsKey = Boolean(false);
     _dpsUsers;
     _dpsBoosters;
 
-    _isDps2Key;
+    _isDps2Key = Boolean(false);
     _dps2Users;
     _dps2Boosters;
 
-    _isTankKey;
+    _isTankKey = Boolean(false);
     _tankUsers;
     _tankBoosters;
 
-    _isHealerKey;
+    _isHealerKey = Boolean(false);
     _healerUsers;
     _healerBoosters;
 
     constructor(message, advertiser, isFull, isComplete, isCanceled, 
-            isDpsKey, dpsUsers, dpsBoosters, 
-            isTankKey, tankUsers, tankBoosters, 
-            isHealerKey, healerUsers, healerBoosters, 
-            isDps2Key, dps2Users, dps2Boosters) {
+             dpsUsers, dpsBoosters, 
+             tankUsers, tankBoosters, 
+             healerUsers, healerBoosters, 
+             dps2Users, dps2Boosters) {
         this._message = message
         this._advertiser = advertiser;
         this._isFull = isFull;
         this._isComplete = isComplete;
         this._isCanceled = isCanceled;
         
-        this._isDpsKey = isDpsKey;
+        //this._isDpsKey = isDpsKey;
         this._dpsUsers = dpsUsers;
         this._dpsBoosters = dpsBoosters;
 
-        this._isDps2Key = isDps2Key;
+        //this._isDps2Key = isDps2Key;
         this._dps2Users = dps2Users;
         this._dps2Boosters = dps2Boosters;
 
-        this._isTankKey = isTankKey;
+        //this._isTankKey = isTankKey;
         this._tankUsers = tankUsers;
         this._tankBoosters = tankBoosters;
 
-        this._isHealerKey = isHealerKey;
+        //this._isHealerKey = isHealerKey;
         this._healerUsers = healerUsers;
         this._healerBoosters = healerBoosters;
     }
 }
 
-async function newAdvertise(message, advertiser, isFull, isComplete, isCanceled, isDpsKey = false, isDps2Key = false, isTankKey = false, isHealerKey = false) {
+async function newAdvertise(message, advertiser, isFull, isComplete, isCanceled) {
     let dpsBoosters = Array();
     let dpsUsers = Array();
     let tankBoosters = Array();
@@ -79,16 +81,15 @@ async function newAdvertise(message, advertiser, isFull, isComplete, isCanceled,
     let dps2Users = Array();
 
     let adv = new Advertise(message, advertiser, isFull, isComplete, isCanceled, 
-        isDpsKey, dpsUsers, dpsBoosters, 
-        isTankKey, tankUsers, tankBoosters, 
-        isHealerKey, healerUsers, healerBoosters, 
-        isDps2Key, dps2Users, dps2Boosters);
+        dpsUsers, dpsBoosters, 
+        tankUsers, tankBoosters, 
+        healerUsers, healerBoosters, 
+        dps2Users, dps2Boosters);
 
-    MessageList.push(adv);
+    MessageList.push(adv);    
     return adv;
 }
 
-var MessageList = Array();
 var isAdvertiserDps = Boolean(false);
 var isAdvertiserTank = Boolean(false);
 var isAdvertiserHealer = Boolean(false);
@@ -188,7 +189,7 @@ client.on('ready', async () => {
                             let regexId = field.value.replace(/\D/g, "");
                             // Return user with by ID
                             let advertiser = await client.users.fetch(regexId);
-                            var createdAdvertise = await newAdvertise(m, advertiser, false, false, false,);
+                            var createdAdvertise = await newAdvertise(m, advertiser, false, false, false);
                             console.log(`Advertise id: ${m.id} not in cache, then cached!`);
                         } else if (field.name === '<:dps:731617839290515516>') {
                             //let addUser = m.guild.members.cache.get(regexId);
@@ -259,36 +260,62 @@ client.on('message', async message => {
     if(message.channel.id === webhookToChannelId && message.author.bot){
         // Add boostId for MessageId 
         //message.embeds[0].setFooter('BoostId: ' + message.id, 'https://bnetcmsus-a.akamaihd.net/cms/template_resource/fh/FHSCSCG9CXOC1462229977849.png');
-        await message.edit(message.embeds[0].setFooter('BoostId: ' + message.id, 'https://bnetcmsus-a.akamaihd.net/cms/template_resource/fh/FHSCSCG9CXOC1462229977849.png'));
+        tmpEmbed = message.embeds[0].setFooter('BoostId: ' + message.id, 'https://bnetcmsus-a.akamaihd.net/cms/template_resource/fh/FHSCSCG9CXOC1462229977849.png');
+        await message.edit(tmpEmbed);
 
-        // Get advertiser from posted message
+        // Get advertiser from posted message with RegEx
         let advertiserId = message.embeds[0].fields[0].value.replace(/\D/g, "");
         // Return user with by ID
         let advertiser = await client.users.fetch(advertiserId);
 
-        let newAdvertise = await newAdvertise(message, advertiser, false, false, false);
+        var adv = await newAdvertise(message, advertiser, false, false, false);
+
         // Add to the list new created advertise
-        MessageList.unshift(newAdvertise);
+        //MessageList.unshift(adv);
         
         // Search at MessageList bofere created advertise
         var advertise = await MessageList.find(x => x._message.id == message.id);
 
-        // Check the is any key priority
+        // If advertiser wants to be a booster too check conditions
         if (isAdvertiserDps){
+            // Have a key for DPS
             if(isAdvertiserKey){
-                await addDps(advertise, advertiser);
                 advertise._isDpsKey = true;
-                isAdvertiserKey = false;
+                advertise._dpsUsers.unshift(advertiser);
+                await addDps(advertise, advertiser);
+            }else{
+                advertise._dpsUsers.push(advertiser);
+                await addDps(advertise, advertiser);
             }
-            await addDps(advertise, advertiser);
-            advertise._isDpsKey = false;
-            isAdvertiserDps = false; 
-        }else if (isAdvertiserHealer){
-            addHealer(advertise, advertiser);
-        }else if(isAdvertiserTank){
-            addTank(advertise, advertiser);
+            isAdvertiserKey = false;
+            isAdvertiserDps = false;
         }
-        
+        else if (isAdvertiserHealer){
+            // Have a key for HEALER
+            if (isAdvertiserKey) {
+                advertise._isHealerKey = true;
+                advertise._healerUsers.unshift(advertiser);
+                await addHealer(advertise, advertiser);
+            } else {
+                advertise._healerUsers.push(advertiser);
+                await addHealer(advertise, advertiser);
+            } 
+            isAdvertiserKey = false;
+            isAdvertiserHealer = false;
+        }
+        else if(isAdvertiserTank){
+            // Have a key for TANK
+            if (isAdvertiserKey) {
+                advertise._isTankKey = true;
+                advertise._tankUsers.unshift(advertiser);
+                addTank(advertise, advertiser);
+            } else {
+                advertise._tankUsers.push(advertiser);
+                addTank(advertise, advertiser);
+            } 
+            isAdvertiserKey = false;
+            isAdvertiserTank = false;
+        }
         
         // Add react to the message
         await message.react('✅').then(() =>
@@ -879,9 +906,9 @@ client.on('messageReactionAdd', async (reaction, user) => {
                     console.log(`You're NOT a Advertiser!`);
                 }
             }
+        } else {
+            console.log(`Advertise not registered! Please contact`)
         }
-    }else{
-        console.log(`Advertise not registered! Please contact`)
     }
 });
 
