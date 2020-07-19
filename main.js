@@ -21,7 +21,7 @@ class Advertise {
     // when advertise full
     _isFull = Boolean(false);
     // when advertise done
-    _isComplete = Boolean(false);
+    _isCompleted = Boolean(false);
     // when advertise canceled
     _isCanceled = Boolean(false);
 
@@ -41,7 +41,7 @@ class Advertise {
     _healerUsers;
     _healerBoosters;
 
-    constructor(message, advertiser, isFull, isComplete, isCanceled, 
+    constructor(message, advertiser, isFull, isCompleted, isCanceled, 
              dpsUsers, dpsBoosters, 
              tankUsers, tankBoosters, 
              healerUsers, healerBoosters, 
@@ -49,7 +49,7 @@ class Advertise {
         this._message = message
         this._advertiser = advertiser;
         this._isFull = isFull;
-        this._isComplete = isComplete;
+        this._isCompleted = isCompleted;
         this._isCanceled = isCanceled;
         
         //this._isDpsKey = isDpsKey;
@@ -70,7 +70,7 @@ class Advertise {
     }
 }
 
-async function newAdvertise(message, advertiser, isFull, isComplete, isCanceled) {
+async function newAdvertise(message, advertiser, isFull, isCompleted, isCanceled) {
     let dpsBoosters = Array();
     let dpsUsers = Array();
     let tankBoosters = Array();
@@ -80,7 +80,7 @@ async function newAdvertise(message, advertiser, isFull, isComplete, isCanceled)
     let dps2Boosters = Array();
     let dps2Users = Array();
 
-    let adv = new Advertise(message, advertiser, isFull, isComplete, isCanceled, 
+    let adv = new Advertise(message, advertiser, isFull, isCompleted, isCanceled, 
         dpsUsers, dpsBoosters, 
         tankUsers, tankBoosters, 
         healerUsers, healerBoosters, 
@@ -191,26 +191,32 @@ client.on('ready', async () => {
                             let advertiser = await client.users.fetch(regexId);
                             var createdAdvertise = await newAdvertise(m, advertiser, false, false, false);
                             console.log(`Advertise id: ${m.id} not in cache, then cached!`);
-                        } else if (field.name === '<:dps:731617839290515516>') {
+                        } else if (field.name === '<:dps:734394556371697794>') {
+                            //if (field.name === '<:dps:734394556371697794><:keys:734119765173600331>'){
+                            //    createdAdvertise._isDpsKey = true;
+                            //}
                             //let addUser = m.guild.members.cache.get(regexId);
                             let regexId = field.value.replace(/\D/g, "");
                             // Return user with by ID
                             let user = await client.users.fetch(regexId);
                             createdAdvertise._dpsBoosters.push(user);
                             createdAdvertise._dpsUsers.push(user);
-                        } else if (field.name === '<:dps2:732689305805520919>') {
+                        } else if (field.name === '<:dps2:734394556744728628>') {
                             let regexId = field.value.replace(/\D/g, "");
                             // Return user with by ID
                             let user = await client.users.fetch(regexId);
                             createdAdvertise._dps2Boosters.push(user);
                             createdAdvertise._dps2Users.push(user);
-                        } else if (field.name === '<:tank:731617839596961832>') {
+                        } else if (field.name === '<:tank:734394557684383775>') {
                             let regexId = field.value.replace(/\D/g, "");
                             // Return user with by ID
                             let user = await client.users.fetch(regexId);
                             createdAdvertise._tankBoosters.push(user);
                             createdAdvertise._tankUsers.push(user);
-                        } else if (field.name === '<:healer:731617839370469446>') {
+                        } else if (field.name === '<:healer:734394557294182520>') {
+                            //if (field.name === '<:healer:734394557294182520><:keys:734119765173600331>'){
+                            //    createdAdvertise._isHealerKey = true;
+                            //}
                             let regexId = field.value.replace(/\D/g, "");
                             // Return user with by ID
                             let user = await client.users.fetch(regexId);
@@ -318,12 +324,15 @@ client.on('message', async message => {
         }
         
         // Add react to the message
-        await message.react('✅')
-        .then(() => message.react('731617839290515516')) // DPS
-        .then(() => message.react('731617839596961832')) // TANK
-        .then(() => message.react('731617839370469446')) // HEALER
-        .then(() => message.react('732689305805520919')) // DPS-2
-        .then(() => message.react('734119765173600331'));// KEY
+        await message.react('734394556371697794') // DPS
+            .then(() => message.react('734394557684383775')) // TANK
+            .then(() => message.react('734394557294182520')) // HEALER
+            .then(() => message.react('734394556744728628')) // DPS-2
+            .then(() => message.react('734119765173600331')) // KEY
+            .then(() => message.react('734368776908177468')) // EMPTY
+            .then(() => message.react('734367159152541727')) // DONE
+            .then(() => message.react('734367159148347392')) // CANCEL
+            .catch(`Problems while adding reactions!`);
     }
 });
 
@@ -342,8 +351,10 @@ async function addDps(advertise, user) {
             let tmpMsg = advertise._message.embeds[0];
             let tmpEmbed = new Discord.MessageEmbed(tmpMsg);
 
+            // TODO Add icon to message if user react key
             // Modified embed message
-            tmpEmbed.fields.push({ name: '<:dps:731617839290515516>', value: `<@${user.id}>`, inline: true });
+            tmpEmbed.fields.push({ name: '<:dps:734394556371697794>', value: `<@${user.id}>`, inline: true });
+            
             // Send modified embed message
             await advertise._message.edit(tmpEmbed);
         }
@@ -359,7 +370,7 @@ async function addDps(advertise, user) {
             let tmpEmbed = new Discord.MessageEmbed(tmpMsg);
 
             // Modified embed message
-            tmpEmbed.fields.push({ name: '<:dps:731617839290515516>', value: `<@${user.id}>`, inline: true });
+            tmpEmbed.fields.push({ name: '<:dps:734394556371697794>', value: `<@${user.id}>`, inline: true });
             // Send modified embed message
             await advertise._message.edit(tmpEmbed);
         }
@@ -379,7 +390,7 @@ async function addTank(advertise, user) {
             let tmpEmbed = new Discord.MessageEmbed(tmpMsg);
 
             // Modified embed message
-            tmpEmbed.fields.push({ name: '<:tank:731617839596961832>', value: `<@${user.id}>`, inline: true });
+            tmpEmbed.fields.push({ name: '<:tank:734394557684383775>', value: `<@${user.id}>`, inline: true });
             // Send modified embed message
             await advertise._message.edit(tmpEmbed);
         }
@@ -395,7 +406,7 @@ async function addTank(advertise, user) {
             let tmpEmbed = new Discord.MessageEmbed(tmpMsg);
 
             // Modified embed message
-            tmpEmbed.fields.push({ name: '<:tank:731617839596961832>', value: `<@${user.id}>`, inline: true });
+            tmpEmbed.fields.push({ name: '<:tank:734394557684383775>', value: `<@${user.id}>`, inline: true });
             // Send modified embed message
             await advertise._message.edit(tmpEmbed);
         }
@@ -415,7 +426,7 @@ async function addHealer(advertise, user) {
             let tmpEmbed = new Discord.MessageEmbed(tmpMsg);
 
             // Modified embed message
-            tmpEmbed.fields.push({ name: '<:healer:731617839370469446>', value: `<@${user.id}>`, inline: true });
+            tmpEmbed.fields.push({ name: '<:healer:734394557294182520>', value: `<@${user.id}>`, inline: true });
             // Send modified embed message
             await advertise._message.edit(tmpEmbed);
         }
@@ -431,7 +442,7 @@ async function addHealer(advertise, user) {
             let tmpEmbed = new Discord.MessageEmbed(tmpMsg);
 
             // Modified embed message
-            tmpEmbed.fields.push({ name: '<:healer:731617839370469446>', value: `<@${user.id}>`, inline: true });
+            tmpEmbed.fields.push({ name: '<:healer:734394557294182520>', value: `<@${user.id}>`, inline: true });
             // Send modified embed message
             await advertise._message.edit(tmpEmbed);
         }
@@ -446,7 +457,7 @@ async function addHealer(advertise, user) {
             let tmpEmbed = new Discord.MessageEmbed(tmpMsg);
 
             // Modified embed message
-            tmpEmbed.fields.push({ name: '<:healer:731617839370469446>', value: `<@${user.id}>`, inline: true });
+            tmpEmbed.fields.push({ name: '<:healer:734394557294182520>', value: `<@${user.id}>`, inline: true });
             // Send modified embed message
             await advertise._message.edit(tmpEmbed);
         }
@@ -467,7 +478,7 @@ async function addDps2(advertise, user) {
             let tmpEmbed = new Discord.MessageEmbed(tmpMsg);
 
             // Modified embed message
-            tmpEmbed.fields.push({ name: '<:dps2:732689305805520919>', value: `<@${user.id}>`, inline: true });
+            tmpEmbed.fields.push({ name: '<:dps2:734394556744728628>', value: `<@${user.id}>`, inline: true });
             // Send modified embed message
             await advertise._message.edit(tmpEmbed);
         }
@@ -483,7 +494,7 @@ async function addDps2(advertise, user) {
             let tmpEmbed = new Discord.MessageEmbed(tmpMsg);
 
             // Modified embed message
-            tmpEmbed.fields.push({ name: '<:dps2:732689305805520919>', value: `<@${user.id}>`, inline: true });
+            tmpEmbed.fields.push({ name: '<:dps2:734394556744728628>', value: `<@${user.id}>`, inline: true });
             // Send modified embed message
             await advertise._message.edit(tmpEmbed);
         }
@@ -503,7 +514,7 @@ async function removeDps(advertise, user) {
 
             // Which message will be deleting
             let temp = new Discord.MessageEmbed().fields;
-            temp.push({ name: '<:dps:731617839290515516>', value: `<@${user.id}>`, inline: true });
+            temp.push({ name: '<:dps:734394556371697794>', value: `<@${user.id}>`, inline: true });
 
             for (let i = 0; i < tmpEmbed.fields.length; i++) {
                 if (tmpEmbed.fields[i].value == temp[0].value && tmpEmbed.fields[i].name == temp[0].name) {
@@ -577,7 +588,7 @@ async function removeTank(advertise, user) {
 
             // Which message will be deleting
             let temp = new Discord.MessageEmbed().fields;
-            temp.push({ name: '<:tank:731617839290515516>', value: `<@${user.id}>`, inline: true });
+            temp.push({ name: '<:tank:734394556371697794>', value: `<@${user.id}>`, inline: true });
 
             for (let i = 10; i < tmpEmbed.fields.length; i++) {
                 if (tmpEmbed.fields[i].value == temp[0].value) {
@@ -661,7 +672,7 @@ async function removeHealer(advertise, user) {
 
             // Which message will be deleting
             let temp = new Discord.MessageEmbed().fields;
-            temp.push({ name: '<:healer:731617839370469446>', value: `<@${user.id}>`, inline: true });
+            temp.push({ name: '<:healer:734394557294182520>', value: `<@${user.id}>`, inline: true });
 
             for (let i = 9; i < tmpEmbed.fields.length; i++) {
                 if (tmpEmbed.fields[i].value == temp[0].value && tmpEmbed.fields[i].name == temp[0].name) {
@@ -744,7 +755,7 @@ async function removeDps2(advertise, user) {
 
             // Which message will be deleting
             let temp = new Discord.MessageEmbed().fields;
-            temp.push({ name: '<:dps2:732689305805520919>', value: `<@${user.id}>`, inline: true });
+            temp.push({ name: '<:dps2:734394556744728628>', value: `<@${user.id}>`, inline: true });
 
             for (let i = 10; i < tmpEmbed.fields.length; i++) {
                 if (tmpEmbed.fields[i].value == temp[0].value && tmpEmbed.fields[i].name == temp[0].name) {
@@ -821,7 +832,7 @@ async function dpsReplace(advertise, user){
 
         // Which message will be deleting
         let temp = new Discord.MessageEmbed().fields;
-        temp.push({ name: '<:dps:731617839290515516>', value: `<@${tempUser.id}>`, inline: true });
+        temp.push({ name: '<:dps:734394556371697794>', value: `<@${tempUser.id}>`, inline: true });
 
         // Search message content and delete it
         for (let i = 0; i < tmpEmbed.fields.length; i++) {
@@ -833,22 +844,21 @@ async function dpsReplace(advertise, user){
         // New modified message
         await advertise._message.edit(tmpEmbed);
 
-        // Remove user from dpsUsers
-        // Find in healer user shifted healer booster
-        // Delete tmpUser from dpsUsers
+        // Delete tepUser from dpsUsers
         let idx = advertise._dpsUsers.indexOf(tempUser);
         if (idx > -1) {
             advertise._dpsUsers.splice(idx, 1);
         }
+        // Insert tempUser to 2nd place
         advertise._dpsUsers.unshift(tempUser);
         
         idx = advertise._dpsUsers.indexOf(user);
         if (idx > -1) {
             advertise._dpsUsers.splice(idx, 1);
         }
+        // Insert user to 1st place
         advertise._isDpsKey = true;
         advertise._dpsUsers.unshift(user);
-        //advertise._dpsBoosters.push(user);
 
         await addDps(advertise, advertise._dpsUsers[0]);
     } // If anyone have a boosting already with key
@@ -861,6 +871,152 @@ async function dpsReplace(advertise, user){
     }
 }
 
+async function dps2Replace(advertise, user) {
+    if (advertise._dps2Users.includes(user) && !advertise._isDps2Key) {
+        let tmpMsg = advertise._message.embeds[0];
+        let tmpEmbed = new Discord.MessageEmbed(tmpMsg);
+
+        // Remove user from dps2Booster
+        let tempUser = advertise._dps2Boosters.shift();
+
+        // Which message will be deleting
+        let temp = new Discord.MessageEmbed().fields;
+        temp.push({ name: '<:dps2:734394556744728628>', value: `<@${tempUser.id}>`, inline: true });
+
+        // Search message content and delete it
+        for (let i = 0; i < tmpEmbed.fields.length; i++) {
+            if (tmpEmbed.fields[i].value == temp[0].value && tmpEmbed.fields[i].name == temp[0].name) {
+                tmpEmbed.fields.splice(i, 1);
+                i--;
+            }
+        }
+        // New modified message
+        await advertise._message.edit(tmpEmbed);
+
+        // Delete tempUser from dps2Users
+        let idx = advertise._dps2Users.indexOf(tempUser);
+        if (idx > -1) {
+            advertise._dps2Users.splice(idx, 1);
+        }
+        // Insert tempUser to 2nd place
+        advertise._dps2Users.unshift(tempUser);
+
+        idx = advertise._dps2Users.indexOf(user);
+        if (idx > -1) {
+            advertise._dps2Users.splice(idx, 1);
+        }
+        // Insert user to 1st place
+        advertise._isDps2Key = true;
+        advertise._dps2Users.unshift(user);
+
+        await addDps2(advertise, advertise._dps2Users[0]);
+    } // If anyone have a boosting already with key
+    else if (advertise._dps2Users.includes(user) && advertise._isDps2Key) {
+        // Then add user 2nd place
+        if (advertise._dps2Users.length == 0) {
+            advertise._dps2Users.push(user);
+        }
+        console.log(`UserId: ${advertise.dps2Boosters[0].id} is already have a key! ${user.id} is coming after him.`)
+    }
+}
+
+async function tankReplace(advertise, user) {
+    if (advertise._tankUsers.includes(user) && !advertise._isTankKey) {
+        let tmpMsg = advertise._message.embeds[0];
+        let tmpEmbed = new Discord.MessageEmbed(tmpMsg);
+
+        // Remove user from tankBoosters
+        let tempUser = advertise._tankBoosters.shift();
+
+        // Which message will be deleting
+        let temp = new Discord.MessageEmbed().fields;
+        temp.push({ name: '<:tank:734394557684383775>', value: `<@${tempUser.id}>`, inline: true });
+
+        // Search message content and delete it
+        for (let i = 0; i < tmpEmbed.fields.length; i++) {
+            if (tmpEmbed.fields[i].value == temp[0].value && tmpEmbed.fields[i].name == temp[0].name) {
+                tmpEmbed.fields.splice(i, 1);
+                i--;
+            }
+        }
+        // New modified message
+        await advertise._message.edit(tmpEmbed);
+
+        // Delete tempUser from tankUsers
+        let idx = advertise._tankUsers.indexOf(tempUser);
+        if (idx > -1) {
+            advertise._tankUsers.splice(idx, 1);
+        }
+        // Insert tempUser to 2nd place
+        advertise._tankUsers.unshift(tempUser);
+
+        idx = advertise._tankUsers.indexOf(user);
+        if (idx > -1) {
+            advertise._tankUsers.splice(idx, 1);
+        }
+        // Insert user to 1st place
+        advertise._isTankKey = true;
+        advertise._tankUsers.unshift(user);
+
+        await addTank(advertise, advertise._tankUsers[0]);
+    } // If anyone have a boosting already with key
+    else if (advertise._tankUsers.includes(user) && advertise._isTankKey) {
+        // Then add user 2nd place
+        if (advertise._tankUsers.length == 0) {
+            advertise._tankUsers.push(user);
+        }
+        console.log(`UserId: ${advertise._tankBoosters[0].id} is already have a key! ${user.id} is coming after him.`)
+    }
+}
+
+async function healerReplace(advertise, user) {
+    if (advertise._healerUsers.includes(user) && !advertise._isHealerKey) {
+        let tmpMsg = advertise._message.embeds[0];
+        let tmpEmbed = new Discord.MessageEmbed(tmpMsg);
+
+        // Remove user from healerBoosters
+        let tempUser = advertise._healerBoosters.shift();
+
+        // Which message will be deleting
+        let temp = new Discord.MessageEmbed().fields;
+        temp.push({ name: '<:tank:734394557684383775>', value: `<@${tempUser.id}>`, inline: true });
+
+        // Search message content and delete it
+        for (let i = 0; i < tmpEmbed.fields.length; i++) {
+            if (tmpEmbed.fields[i].value == temp[0].value && tmpEmbed.fields[i].name == temp[0].name) {
+                tmpEmbed.fields.splice(i, 1);
+                i--;
+            }
+        }
+        // New modified message
+        await advertise._message.edit(tmpEmbed);
+
+        // Delete tempUser from healerUsers
+        let idx = advertise._healerUsers.indexOf(tempUser);
+        if (idx > -1) {
+            advertise._healerUsers.splice(idx, 1);
+        }
+        // Insert tempUser to 2nd place
+        advertise._healerUsers.unshift(tempUser);
+
+        idx = advertise._healerUsers.indexOf(user);
+        if (idx > -1) {
+            advertise._healerUsers.splice(idx, 1);
+        }
+        // Insert user to 1st place
+        advertise._isTankKey = true;
+        advertise._healerUsers.unshift(user);
+
+        await addHealer(advertise, advertise._healerUsers[0]);
+    } // If anyone have a boosting already with key
+    else if (advertise._healerUsers.includes(user) && advertise._isHealerKey) {
+        // Then add user 2nd place
+        if (advertise._healerUsers.length == 0) {
+            advertise._healerUsers.push(user);
+        }
+        console.log(`UserId: ${advertise._healerUsers[0].id} is already have a key! ${user.id} is coming after him.`)
+    }
+}
 
 client.on('messageReactionAdd', async (reaction, user) => {
     if(user.bot){
@@ -873,99 +1029,169 @@ client.on('messageReactionAdd', async (reaction, user) => {
         //let advertiser = currAdv._advertiser;
         if (currAdv) {
             // Dps Queue
-            if (reaction.emoji.id === '731617839290515516') {
+            //If is advertise isnt full then catch reactions
+            if(!currAdv._isFull && !currAdv._isCanceled && !currAdv.isComplete){
+                if (reaction.emoji.id === '734394556371697794') {
+                    // if reacted user does not exist in dpsUsers, avoid clone
+                    if (!currAdv._dpsUsers.includes(user) && !currAdv._dps2Users.includes(user)) {
+                        // if booster is already take the any role boost, put new user front of him
+                        if ((currAdv._dpsBoosters[0] == currAdv._tankBoosters[0]) ||
+                            (currAdv._dpsBoosters[0] == currAdv._healerBoosters[0]) ||
+                            (currAdv._dpsBoosters[0] == currAdv._dps2Boosters[0])) {
+                            await currAdv._dpsUsers.unshift(user);
+                        }
+                        else {
+                            await currAdv._dpsUsers.push(user);
+                        }
+                        if (currAdv._dpsBoosters.length == 0) {
+                            await addDps(currAdv, currAdv._dpsUsers[0]);
+                        }
+                    }
+                }// Dps 2 Queue
+                else if (reaction.emoji.id === '734394556744728628') {
+                    // if reacted user does not exist in healerUsers, avoid clone
+                    if (!currAdv._dps2Users.includes(user) && !currAdv._dpsUsers.includes(user)) {
+                        if ((currAdv._dps2Boosters[0] == currAdv._dpsBoosters[0]) ||
+                            (currAdv._dps2Boosters[0] == currAdv._tankBoosters[0]) ||
+                            (currAdv._dps2Boosters[0] == currAdv._healerBoosters[0])) {
+                            await currAdv._dps2Users.unshift(user);
+                        }
+                        else {
+                            await currAdv._dps2Users.push(user);
+                        }
+                        if (currAdv._dps2Boosters.length == 0) {
+                            await addDps2(currAdv, currAdv._dps2Users[0]);
+                        }
+                    }
+                }// Tank Queue
+                else if (reaction.emoji.id === '734394557684383775') {
+                    // if reacted user does not exist in tankUsers, avoid clone
+                    if (!currAdv._tankUsers.includes(user)) {
+                        if ((currAdv._tankBoosters[0] == currAdv._dpsBoosters[0]) ||
+                            (currAdv._tankBoosters[0] == currAdv._healerBoosters[0]) ||
+                            (currAdv._tankBoosters[0] == currAdv._dps2Boosters[0])) {
+                            await currAdv._tankUsers.unshift(user);
+                        }
+                        else {
+                            await currAdv._tankUsers.push(user);
+                        }
+                        if (currAdv._tankBoosters.length == 0 && !currAdv._dpsBoosters.includes(user) && !currAdv._dps2Boosters.includes(user) && !currAdv._healerBoosters.includes(user)) {
+                            await addTank(currAdv, currAdv._tankUsers[0]);
+                        }
+                    }
+                }// Healer Queue
+                else if (reaction.emoji.id === '734394557294182520') {
+                    // if reacted user does not exist in healerUsers, avoid clone
+                    if (!currAdv._healerUsers.includes(user)) {
+                        // TODO If user already registered at any booster go front of him
+                        if ((currAdv._healerBoosters[0] == currAdv._dpsBoosters[0]) ||
+                            (currAdv._healerBoosters[0] == currAdv._tankBoosters[0]) ||
+                            (currAdv._healerBoosters[0] == currAdv._dps2Boosters[0])) {
+                            await currAdv._healerUsers.unshift(user);
+                        }
+                        else {
+                            await currAdv._healerUsers.push(user);
+                        }
+                        if (currAdv._healerBoosters.length == 0 && !currAdv._dpsBoosters.includes(user) && !currAdv._dps2Boosters.includes(user) && !currAdv._tankBoosters.includes(user)) {
+                            await addHealer(currAdv, currAdv._healerUsers[0]);
+                        }
+                    }
+                }// Key Button
+                else if (reaction.emoji.id === '734119765173600331') {
 
-                // if reacted user does not exist in dpsUsers, avoid clone
-                if (!currAdv._dpsUsers.includes(user) && !currAdv._dps2Users.includes(user)) {
-                    // if booster is already take the any role boost, put new user front of him
-                    if ((currAdv._dpsBoosters[0] == currAdv._tankBoosters[0]) || 
-                        (currAdv._dpsBoosters[0] == currAdv._healerBoosters[0]) || 
-                        (currAdv._dpsBoosters[0] == currAdv._dps2Boosters[0])) {
-                        await currAdv._dpsUsers.unshift(user);
+                    if (currAdv._dpsUsers.includes(user) || currAdv._dpsBoosters.includes(user)) {
+                        // User is already in DPS, change the Key status
+                        if (currAdv._dpsUsers.includes(user) && currAdv._dpsBoosters.includes(user)) {
+                            currAdv._isDpsKey = true;
+                        }
+                        // User is waiting at queue add him instantly to the DPS
+                        else if (currAdv._dpsUsers.includes(user) && !currAdv._dpsBoosters.includes(user) && !currAdv._isDpsKey) {
+                            // Remove user if doesnt have key, put 2nd place dps queue
+                            await dpsReplace(currAdv, user);
+                        }
                     }
-                    else {
-                        await currAdv._dpsUsers.push(user);
+                    else if (currAdv._dps2Users.includes(user) || currAdv._dps2Boosters.includes(user)) {
+                        // User is already in DPS2, change the Key status
+                        if (currAdv._dps2Users.includes(user) && currAdv._dps2Boosters.includes(user)) {
+                            currAdv._isDps2Key = true;
+                        }
+                        // User is waiting at queue add him instantly to the DPS2
+                        else if (currAdv._dps2Users.includes(user) && !currAdv._dps2Boosters.includes(user) && !currAdv._isDps2Key) {
+                            // Remove user if doesnt have key, put 2nd place dps queue
+                            await dps2Replace(currAdv, user);
+                        }
                     }
-                    if(currAdv._dpsBoosters.length == 0){
-                        await addDps(currAdv, currAdv._dpsUsers[0]);
+                    else if (currAdv._tankUsers.includes(user) || currAdv._tankBoosters.includes(user)) {
+                        // User is already in TANK, change the Key status
+                        if (currAdv._tankUsers.includes(user) && currAdv._tankBoosters.includes(user)) {
+                            currAdv._isTankKey = true;
+                        }
+                        // User is waiting at queue add him instantly to the TANK
+                        else if (currAdv._tankUsers.includes(user) && !currAdv._tankBoosters.includes(user) && !currAdv._isTankKey) {
+                            // Remove user if doesnt have key, put 2nd place dps queue
+                            await tankReplace(currAdv, user);
+                        }
                     }
-                }
-            }// Dps 2 Queue
-            else if (reaction.emoji.id === '732689305805520919') {
-                // if reacted user does not exist in healerUsers, avoid clone
-                if (!currAdv._dps2Users.includes(user) && !currAdv._dpsUsers.includes(user)) {
-                    if ((currAdv._dps2Boosters[0] == currAdv._dpsBoosters[0]) || 
-                        (currAdv._dps2Boosters[0] == currAdv._tankBoosters[0]) || 
-                        (currAdv._dps2Boosters[0] == currAdv._healerBoosters[0])) {
-                        await currAdv._dps2Users.unshift(user);
-                    }
-                    else {
-                        await currAdv._dps2Users.push(user);
-                    }
-                    if(currAdv._dps2Boosters.length == 0){
-                        await addDps2(currAdv, currAdv._dps2Users[0]);
-                    }
-                }
-            }// Tank Queue
-            else if (reaction.emoji.id === '731617839596961832') {
-                // if reacted user does not exist in tankUsers, avoid clone
-                if (!currAdv._tankUsers.includes(user)) {
-                    if ((currAdv._tankBoosters[0] == currAdv._dpsBoosters[0]) || 
-                        (currAdv._tankBoosters[0] == currAdv._healerBoosters[0]) || 
-                        (currAdv._tankBoosters[0] == currAdv._dps2Boosters[0])) {
-                        await currAdv._tankUsers.unshift(user);
-                    }
-                    else {
-                        await currAdv._tankUsers.push(user);
-                    }
-                    if (currAdv._tankBoosters.length == 0 && !currAdv._dpsBoosters.includes(user) && !currAdv._dps2Boosters.includes(user) && !currAdv._healerBoosters.includes(user) ){
-                        await addTank(currAdv, currAdv._tankUsers[0]);
-                    }
-                }
-            }// Healer Queue
-            else if (reaction.emoji.id === '731617839370469446') {
-                // if reacted user does not exist in healerUsers, avoid clone
-                if (!currAdv._healerUsers.includes(user)) {
-                    // TODO If user already registered at any booster go front of him
-                    if ((currAdv._healerBoosters[0] == currAdv._dpsBoosters[0]) || 
-                        (currAdv._healerBoosters[0] == currAdv._tankBoosters[0]) || 
-                        (currAdv._healerBoosters[0] == currAdv._dps2Boosters[0])) {
-                        await currAdv._healerUsers.unshift(user);
-                    } 
-                    else {
-                        await currAdv._healerUsers.push(user);
-                    }
-                    if (currAdv._healerBoosters.length == 0 && !currAdv._dpsBoosters.includes(user) && !currAdv._dps2Boosters.includes(user) && !currAdv._tankBoosters.includes(user) ) {
-                        await addHealer(currAdv, currAdv._healerUsers[0]);
+                    else if (currAdv._healerUsers.includes(user) || currAdv._healerBoosters.includes(user)) {
+                        // User is already in HEALER, change the Key status
+                        if (currAdv._healerUsers.includes(user) && currAdv._healerBoosters.includes(user)) {
+                            currAdv._isHealerKey = true;
+                        }
+                        // User is waiting at queue add him instantly to the HEALER
+                        else if (currAdv._healerUsers.includes(user) && !currAdv._healerBoosters.includes(user) && !currAdv._isHealerKey) {
+                            // Remove user if doesnt have key, put 2nd place dps queue
+                            await healerReplace(currAdv, user);
+                        }
+                    } else {
+                        console.log(`${user.tag} have to select ant role before click KEY!`);
                     }
                 }
-            }// Key Button
-            else if (reaction.emoji.id === '734119765173600331') {
-                if (currAdv._dpsUsers.includes(user) || currAdv._dpsBoosters.includes(user)) {
-                    // User is already in DPS change the Key status true
-                    if (currAdv._dpsUsers.includes(user) && currAdv._dpsBoosters.includes(user)){
-                        currAdv._isDpsKey = true;
-                    }
-                    // User is waiting at queue add him instantly to the DPS
-                    else if (currAdv._dpsUsers.includes(user) && !currAdv._dpsBoosters.includes(user) && !currAdv._isDpsKey){
-                        // Remove user if doesnt have key, put 2nd place dps queue
-                        await dpsReplace(currAdv, user);
-                    }
-                    else{
-                        console.log(`${user.tag} have to select DPS Role!`);
-                    }
-
-                }
+            }else{
+                console.log(`Advertise cannot reactable! It can be Full, Canceled or Completed!`);
             }
-            // Only advertiser can react, when the boos complete!
-            else if (reaction.emoji.name === '✅'){
-                if(currAdv._advertiser == user){
+            
+            if (currAdv._advertiser == user) {
+                // When DONE button reacted, 
+                // Remove all role emojis and change adv. FULL=true
+                if (reaction.emoji.id === '734367159152541727') {
+
+                    currAdv._isFull = true;
                     console.log(`You're a Advertiser! ${user.tag}`);
+                    let reactions = await currAdv._message.reactions;
+                    let rec = await reactions.cache.map(reac => reac);
 
-                }else{
-                    console.log(`You're NOT a Advertiser! ${user.tag}`);
+                    rec.forEach(r => {
+                        // Don't delete Done, RunFinish and Cancel Emojis
+                        if (!(r.emoji.id == '734367159152541727') && !(r.emoji.id == '734367159148347392') && !(r.emoji.id == '734372934902218802')) {
+                            r.remove();
+                        }
+                    });
+                    currAdv._message.react('734372934902218802');
+
                 }
-            }
+                // When CANCELED button reacted, Change advertise content then
+                // Remove all another emojis and change adv. status CANCELED=true
+                else if (reaction.emoji.id === '734368776908177468') {
+                    // edit message content
+                }
+                // When FINISHED button reacted, 
+                // Remove all another emojis and change adv. status COMPLETED=true
+                else if (reaction.emoji.id === '734372934902218802') {
+                    // Balances added to the booster users
+                    let reactions = await currAdv._message.reactions;
+                    let rec = await reactions.cache.map(reac => reac);
+
+                    rec.forEach(r => {
+                        r.remove();
+                    });
+
+                    // TODO Add balances who are boosters
+                }
+            } else {
+                console.log(`You're NOT a Advertiser! ${user.tag}`);
+            
+            } 
+            
         } else {
             console.log(`Advertise not registered! Please contact`)
         }
@@ -979,7 +1205,7 @@ client.on('messageReactionRemove', async (reaction, user) => {
     // Find which advertise reacted
     if (currAdv) {
         // DPS Boosters
-        if (reaction.emoji.id === '731617839290515516') {
+        if (reaction.emoji.id === '734394556371697794') {
             if (reaction.message.id == currAdv._message.id) {
                 if (currAdv._dpsBoosters.includes(user)) {
                     await removeDps(currAdv, user);
@@ -995,7 +1221,7 @@ client.on('messageReactionRemove', async (reaction, user) => {
                 }
             }
         }// DPS2 Boosters
-        else if (reaction.emoji.id === '732689305805520919') {
+        else if (reaction.emoji.id === '734394556744728628') {
             if (reaction.message.id == currAdv._message.id) {
                 if (currAdv._dps2Boosters.includes(user)) {
                     await removeDps2(currAdv, user);
@@ -1011,7 +1237,7 @@ client.on('messageReactionRemove', async (reaction, user) => {
                 }
             }
         } // Tank Boosters
-        else if (reaction.emoji.id === '731617839596961832') {
+        else if (reaction.emoji.id === '734394557684383775') {
             if (reaction.message.id == currAdv._message.id) {
                 if (currAdv._tankBoosters.includes(user)) {
                     await removeTank(currAdv, user);
@@ -1027,7 +1253,7 @@ client.on('messageReactionRemove', async (reaction, user) => {
                 }
             }
         } // Healer Boosters
-        else if (reaction.emoji.id === '731617839370469446') {
+        else if (reaction.emoji.id === '734394557294182520') {
             if (reaction.message.id == currAdv._message.id) {
                 if(currAdv._healerBoosters.includes(user)){
                     await removeHealer(currAdv, user);
@@ -1042,6 +1268,9 @@ client.on('messageReactionRemove', async (reaction, user) => {
                     }
                 }
             }
+        } // Key Emote 
+        else if (reaction.emoji.id === '734119765173600331') {
+            // Key remove event already did from replace
         }
     }
 });
