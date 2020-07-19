@@ -4,7 +4,7 @@ require('dotenv').config();
 const Discord = require('discord.js');
 const config = require('./config.json');
 const client = new Discord.Client({ partials: ['MESSAGE', 'CHANNEL', 'REACTION'] });
-const boosterCut = 20;
+const boosterCut = 5.7142;
 // webhook messages drops here (channel id)
 const webhookFromChannelId = "731543421340221521";
 // routing to booster channel
@@ -123,7 +123,7 @@ async function modifyWebhook(embed) {
         }
         else if(item.name === 'Boost Price'){
             newEmbed.addField(item.name, item.value, true);
-            newEmbed.addField(`Booster Cut %${boosterCut}`, (Math.round(parseInt(item.value)/boosterCut)), true);
+            newEmbed.addField(`Booster Cut %${boosterCut}`, (Math.round(parseInt(item.value)/(boosterCut))), true);
         }
         else if (item.name === 'Are you gonna join the boost?'){
             if (item.value === 'Yes'){
@@ -344,6 +344,8 @@ client.on('message', async message => {
                 // Notice all members after created advertise
                 let newMsg = new Discord.MessageEmbed();
                 newMsg.setDescription(`New boost created!\nAdvertiseId: ${message.id} <@&734454074467942903> <@&734454021343019159> <@&734453923665936394>`);
+            
+                await client.channels.cache.get(webhookToChannelId).send(newMsg); 
             }
         }
     }  
@@ -366,7 +368,11 @@ async function addDps(advertise, user) {
 
             // TODO Add icon to message if user react key
             // Modified embed message
-            tmpEmbed.fields.push({ name: '<:dps:734394556371697794>', value: `<@${user.id}>`, inline: true });
+            if(advertise._isDpsKey){
+                tmpEmbed.fields.push({ name: '<:dps:734394556371697794>', value: `<@${user.id}><:keys:734119765173600331>`, inline: true });
+            }else{
+                tmpEmbed.fields.push({ name: '<:dps:734394556371697794>', value: `<@${user.id}>`, inline: true });
+            }
             
             // Send modified embed message
             await advertise._message.edit(tmpEmbed);
@@ -383,7 +389,12 @@ async function addDps(advertise, user) {
             let tmpEmbed = new Discord.MessageEmbed(tmpMsg);
 
             // Modified embed message
-            tmpEmbed.fields.push({ name: '<:dps:734394556371697794>', value: `<@${user.id}>`, inline: true });
+            if (advertise_isDpsKey) {
+                tmpEmbed.fields.push({ name: '<:dps:734394556371697794>', value: `<@${user.id}><:keys:734119765173600331>`, inline: true });
+            } else {
+                tmpEmbed.fields.push({ name: '<:dps:734394556371697794>', value: `<@${user.id}>`, inline: true });
+            }
+            
             // Send modified embed message
             await advertise._message.edit(tmpEmbed);
         }
@@ -527,7 +538,12 @@ async function removeDps(advertise, user) {
 
             // Which message will be deleting
             let temp = new Discord.MessageEmbed().fields;
-            temp.push({ name: '<:dps:734394556371697794>', value: `<@${user.id}>`, inline: true });
+            if(advertise._isDpsKey){
+                temp.push({ name: '<:dps:734394556371697794>', value: `<@${user.id}><:keys:734119765173600331>`, inline: true });
+            }else{
+                temp.push({ name: '<:dps:734394556371697794>', value: `<@${user.id}>`, inline: true });
+            }
+            
 
             for (let i = 0; i < tmpEmbed.fields.length; i++) {
                 if (tmpEmbed.fields[i].value == temp[0].value && tmpEmbed.fields[i].name == temp[0].name) {
@@ -540,7 +556,7 @@ async function removeDps(advertise, user) {
             await advertise._message.edit(tmpEmbed);
 
             // Remove user from dpsBooster
-            let tmpUser = advertise._dpsBoosters.shift();
+            var tmpUser = advertise._dpsBoosters.shift();
             // Remove user from dpsUsers
             // Find in healer user shifted healer booster
             // Delete tmpUser from dpsUsers
@@ -548,6 +564,9 @@ async function removeDps(advertise, user) {
             if (idx > -1) {
                 advertise._dpsUsers.splice(idx, 1);
             }
+
+            advertise._isDpsKey = false;
+            
             /*
             // Remove user from boosterList
             idx = advertise._boosterList.indexOf(tmpUser);
@@ -557,6 +576,7 @@ async function removeDps(advertise, user) {
 
             // Add first user at dpsUser queue
             // TODO Send who is waiting dps queue
+            
             if (advertise._dpsUsers.length > 0) {
                 await addDps(advertise, advertise._dpsUsers[0]);
             }
@@ -568,8 +588,8 @@ async function removeDps(advertise, user) {
                     await addTank(advertise, user);
                 }
             }
-            // If user choosed another reactions when release healer then add to him
 
+            // If user choosed another reactions when release healer then add to him
             if (advertise._healerUsers.includes(user) && advertise._healerBoosters.length == 0) {
                 // Check the user is in another emote
                 if (!advertise._tankUsers.includes(user)) {
@@ -583,7 +603,6 @@ async function removeDps(advertise, user) {
                 }
             }
 
-            advertise._isDpsKey = false;
         }
     }
 }
@@ -992,11 +1011,11 @@ async function healerReplace(advertise, user) {
 
         // Which message will be deleting
         let temp = new Discord.MessageEmbed().fields;
-        temp.push({ name: '<:tank:734394557684383775>', value: `<@${tempUser.id}>`, inline: true });
+        temp.push({ name: '<:healer:734394557294182520>', value: `<@${tempUser.id}>`, inline: true });
 
         // Search message content and delete it
         for (let i = 0; i < tmpEmbed.fields.length; i++) {
-            if (tmpEmbed.fields[i].value == temp[0].value && tmpEmbed.fields[i].name == temp[0].name) {
+            if ((tmpEmbed.fields[i].value == temp[0].value) && (tmpEmbed.fields[i].name == temp[0].name)) {
                 tmpEmbed.fields.splice(i, 1);
                 i--;
             }
@@ -1115,9 +1134,27 @@ client.on('messageReactionAdd', async (reaction, user) => {
                         // User is already in DPS, change the Key status
                         if (currAdv._dpsUsers.includes(user) && currAdv._dpsBoosters.includes(user)) {
                             currAdv._isDpsKey = true;
+                            // TODO might be problem here
+                            let tmpMsg = currAdv._message.embeds[0];
+                            let tmpEmbed = new Discord.MessageEmbed(tmpMsg);
+                            // TODO Add icon to message if user react key
+                            // Modified embed message
+                            let temp = new Discord.MessageEmbed().fields;
+                            temp.push({ name: '<:dps:734394556371697794>', value: `<@${user.id}>`, inline: true });
+                            //tmpEmbed.fields.push({ name: '<:dps:734394556371697794>', value: `<@${user.id}><:keys:734119765173600331>`, inline: true });
+
+                            for (let i = 0; i < tmpEmbed.fields.length; i++) {
+                                if (tmpEmbed.fields[i].value == temp[0].value && tmpEmbed.fields[i].name == temp[0].name) {
+                                    tmpEmbed.fields.splice(i, 1, { name: '<:dps:734394556371697794>', value: `<@${user.id}><:keys:734119765173600331>`, inline: true });
+                                    i--;
+                                }
+                            }
+
+                            // Send modified embed message
+                            await currAdv._message.edit(tmpEmbed);
                         }
                         // User is waiting at queue add him instantly to the DPS
-                        else if (currAdv._dpsUsers.includes(user) && !currAdv._dpsBoosters.includes(user) && !currAdv._isDpsKey) {
+                        else if (currAdv._dpsUsers.includes(user) && !currAdv._dpsBoosters.includes(user) && currAdv._isDpsKey) {
                             // Remove user if doesnt have key, put 2nd place dps queue
                             await dpsReplace(currAdv, user);
                         }
@@ -1197,13 +1234,12 @@ client.on('messageReactionAdd', async (reaction, user) => {
                     });
                     currAdv._message.react('734372934902218802');
                     let newMsg = new Discord.MessageEmbed();
-                    newMsg.setDescription(`\n<@${currAdv._advertiser[0].id}> owner of boosting started, Good luck!\n`
-                        `<:dps:734394556371697794><@${currAdv._dpsBoosters[0].id}> - ${currAdv._dpsBoosters[0].tag}\n`
-                        `<:dps2:734394556744728628><@${currAdv._dps2Boosters[0].id}> - ${currAdv._dps2Boosters[0].tag}\n`
-                        `<:healer:734394557294182520><@${currAdv._healerBoosters[0].id}> - ${currAdv._healerBoosters[0].tag}\n`
-                        `<:tank:734394557684383775><@${currAdv._tankBoosters[0].id}> - ${currAdv._tankBoosters[0].tag}\n`);
-                    
-                    //currAdv._message.reply(`\nGood luck; <:dps:734394556371697794><@${currAdv._dpsBoosters[0].id}> | ${currAdv._dpsBoosters[0].id}`);
+                    let advId = currAdv._advertiser;
+                    let advert = "<@" + currAdv._advertiser.id + ">";
+                    //newMsg.setDescription("<@" + currAdv._advertiser.id + ">");
+                    newMsg.setDescription(`${advert} owner of boosting started, Good luck!\n<:dps:734394556371697794><@${currAdv._dpsBoosters[0].id}>, <:dps2:734394556744728628><@${currAdv._dps2Boosters[0].id}>, <:healer:734394557294182520><@${currAdv._healerBoosters[0].id}>, <:tank:734394557684383775><@${currAdv._tankBoosters[0].id}>`);
+                    //newMsg.setDescription("<@" + currAdv._advertiser.id + `> owner of boosting started, Good luck!\n<:dps:734394556371697794><@${currAdv._dpsBoosters[0].id}>, <:dps2:734394556744728628><@${currAdv._dps2Boosters[0].id}>, <:healer:734394557294182520><@${currAdv._healerBoosters[0].id}>, <:tank:734394557684383775><@${currAdv._tankBoosters[0].id}>` + "```\w " + currAdv._message.embeds[0].field[9].value + " inv```");
+
                     await client.channels.cache.get(webhookToChannelId).send(newMsg); 
                     
                 }
