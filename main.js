@@ -4,48 +4,25 @@ require('dotenv').config();
 const Discord = require('discord.js');
 const config = require('./config.json');
 const { GoogleSpreadsheet } = require('google-spreadsheet');
+const { promisify } = require('util');
+
 const client = new Discord.Client({ partials: ['MESSAGE', 'CHANNEL', 'REACTION'] });
-const boosterCut = 5.7142;
-// webhook messages drops here (channel id)
+const boosterCut = 0.175; // Booster Rate
+const advertiserCut = 0.25; // Advertiser Rate
+
+// Webhook messages drops here (channel id)
 const webhookFromChannelId = "731543421340221521";
-// routing to booster channel
+// Routing to booster channel coming webhook
 const webhookToChannelId = "731523810662154311";
+// Command channel
+const commandChannelId = "731232365388759113";
+
+// The spreadsheet ID from the url
+const doc = new GoogleSpreadsheet('1Gcxal2auntcl37JUir26PUpyeZCMJwkYzn3o24CEzsY');
 
 client.login(process.env.DISCORD_TOKEN);
 
-var MessageList = new Array();
-var isAdvertiserDps = new Boolean(false);
-var isAdvertiserTank = new Boolean(false);
-var isAdvertiserHealer = new Boolean(false);
-var isAdvertiserKey = new Boolean(false);
-
 class Advertise {
-    _message;
-    _advertiser;
-
-    // when advertise full
-    _isFull = Boolean(false);
-    // when advertise done
-    _isCompleted = Boolean(false);
-    // when advertise canceled
-    _isCanceled = Boolean(false);
-
-    _isDpsKey = Boolean(false);
-    _dpsUsers;
-    _dpsBoosters;
-
-    _isDps2Key = Boolean(false);
-    _dps2Users;
-    _dps2Boosters;
-
-    _isTankKey = Boolean(false);
-    _tankUsers;
-    _tankBoosters;
-
-    _isHealerKey = Boolean(false);
-    _healerUsers;
-    _healerBoosters;
-
     constructor(message, advertiser, isFull, isCompleted, isCanceled, 
              dpsUsers, dpsBoosters, 
              tankUsers, tankBoosters, 
@@ -75,9 +52,34 @@ class Advertise {
     }
 }
 
-function getRandomArbitrary(min, max) {
-    return Math.random() * (max - min) + min;
+class AdvertiseLog{
+    constructor(advertise) {
+        this._boostId = advertise._message.id;
+        this._boostPrice = advertise._message.embeds[0].fields[6].value;
+        this._publishedDate = new Date().toLocaleString();
+        this._startedDate = 0;
+        this._completedDate = 0;
+        this._isCompleted = advertise._isCompleted;
+        this._isCanceled = advertise._isCanceled;
+        this._boostedCustomer = advertise._message.embeds[0].fields[9].value;
+        this._advertiserId = advertise._advertiser.id;
+        this._advertiseCut = Math.round((parseInt(advertise._message.embeds[0].fields[6].value) * (advertiserCut)));
+        this._dpsBoosterId = 0;
+        this._dpsBoosterCut = 0;
+        this._dps2BoosterId = 0;
+        this._dps2BoosterCut = 0;
+        this._healerBoosterId = 0;
+        this._healerBoosterCut = 0;
+        this._tankBoosterId = 0;
+        this._tankBoosterCut = 0;
+    }
 }
+
+var MessageList = new Array();
+var isAdvertiserDps = Boolean(false);
+var isAdvertiserTank = Boolean(false);
+var isAdvertiserHealer = Boolean(false);
+var isAdvertiserKey = Boolean(false);
 
 async function newAdvertise(message, advertiser, isFull, isCompleted, isCanceled) {
     let dpsBoosters = Array();
@@ -124,7 +126,7 @@ async function modifyWebhook(embed) {
         }
         else if(item.name === 'Boost Price'){
             newEmbed.addField(item.name, item.value, true);
-            newEmbed.addField(`Booster Cut %${boosterCut}`, (Math.round(parseInt(item.value)/(boosterCut))), true);
+            newEmbed.addField(`Booster Cut %${boosterCut}`, (Math.round(parseInt(item.value)*(boosterCut))), true);
         }
         else if (item.name === 'Are you gonna join the boost?'){
             if (item.value === 'Yes'){
@@ -161,8 +163,84 @@ async function modifyWebhook(embed) {
     return newEmbed
 }
 
+async function insertNewBooster(){
+
+}
+
+async function insertBoostRow(advertise){
+
+    await doc.useServiceAccountAuth(require('./client_secret.json'));
+    await doc.loadInfo();
+
+    const sheet = doc.sheetsByIndex[0];
+
+    try {
+        let advertiseLog = new AdvertiseLog(advertise);
+
+        const newRow = await sheet.addRow({
+            BoostId: advertiseLog._boostId,
+            BoostPrice: advertiseLog._boostPrice,
+            PublishedDate: advertiseLog._publishedDate,
+            isCompleted: advertiseLog._isCompleted,
+            isCanceled: advertiseLog._isCanceled,
+            BoostedCustomer: advertiseLog._boostedCustomer,
+            AdvertiserId: advertiseLog._advertiserId}
+        );
+
+    } catch (error) {
+        console.log(`Error while insert data spreadsheet ${error}`)
+    }
+}
+
+async function modifyAdvertiseLog(advertise, row){
+    row.isCompleted = advertise._isCompleted;
+    row.isCanceled = advertise._isCanceled;
+    row.AdvertiserId = advertise._advertiser.id;
+
+    if (advertise._isCompleted) {
+        let advertiserPrice = Math.round((parseInt(row.BoostPrice) * advertiserCut));
+        let boosterPrice = Math.round((parseInt(row.BoostPrice) * boosterCut));
+
+        row.CompleteDate = new Date().toLocaleString();
+        row.AdvertiseCut = advertiserPrice;
+        row.DpsBooster = advertise._dpsBoosters[0].id;
+        row.DpsBoosterCut = boosterPrice;
+        row.Dps2Booster = advertise._dps2Boosters[0].id;
+        row.Dps2BoosterCut = boosterPrice;
+        row.HealerBooster = advertise._healerBoosters[0].id;
+        row.HealerBoosterCut = boosterPrice;
+        row.TankBooster = advertise._tankBoosters[0].id;
+        row.TankBoosterCut = boosterPrice;
+    }
+
+    return row;
+}
+
+async function updateBoostRow(advertise){
+    console.log(`Spreadsheet update start at ${new Date().toLocaleString()}`);
+    await doc.useServiceAccountAuth(require('./client_secret.json'));
+    await doc.loadInfo();
+
+    const sheet = doc.sheetsByIndex[0];
+
+    var rows = await sheet.getRows();
+    // Find specific row which is matches with advertiseId
+    var advertiseId = advertise._message.id;
+    // Search all of rows
+    for (let row of rows) {
+        // Which row.BoostId match with advertiseId(message id)
+        if (advertiseId === row.BoostId) {
+            row = await modifyAdvertiseLog(advertise, row);
+            await row.save();
+        }
+    }
+
+    console.log(`Spreadsheet update end at ${new Date().toLocaleString()}`);
+}
+
 client.on('ready', async () => {
-    console.log(`Bot started NOW! - ${new Date().toLocaleString()}`);
+    console.log(`Bot started at ${new Date().toLocaleString()}`);
+
     try {
         // Get specific channel informations
         //var channel = await client.channels.cache.get(webhookToChannelId).fetch().then((msg) => msg.map( m => m));
@@ -273,7 +351,7 @@ client.on('ready', async () => {
         console.log(`ERROR while bot starting fetching old messages: ${error}`);
     }
     
-    console.log(`Logged in as ${client.user.tag}!`);
+    console.log(`Bot loaded at ${new Date().toLocaleString()}`);
 });
 
 
@@ -289,14 +367,6 @@ client.on('message', async message => {
         var newEmbed = await modifyWebhook(embed);
         // Send, new modified message to the specific channel
         try {
-            /*
-            const editEmbed = new Discord.MessageEmbed().addField()
-                .setDescription('this is the old description')
-                .addField({});
-
-            client.channels.cache.get(webhookToChannelId)
-                            .send(newEmbed).then((m) =>
-                                m.edit(newEmbed.setTitle(`NABERRR`)));*/
             await client.channels.cache.get(webhookToChannelId).send(newEmbed);         
         } catch (error) {
             console.log("WEBHOOK POST ERROR: " + error);
@@ -307,7 +377,6 @@ client.on('message', async message => {
         if(message.embeds[0].title != null){
             if (message.embeds[0].title == 'Need Dungeon Booster!') {
                 // Add boostId for MessageId 
-                //message.embeds[0].setFooter('BoostId: ' + message.id, 'https://bnetcmsus-a.akamaihd.net/cms/template_resource/fh/FHSCSCG9CXOC1462229977849.png');
                 tmpEmbed = message.embeds[0].setFooter('BoostId: ' + message.id, 'https://i.ibb.co/1fZjCLz/anka-trans.png');
                 await message.edit(tmpEmbed);
 
@@ -317,9 +386,6 @@ client.on('message', async message => {
                 let advertiser = await client.users.fetch(advertiserId);
 
                 var adv = await newAdvertise(message, advertiser, false, false, false);
-
-                // Add to the list new created advertise
-                //MessageList.unshift(adv);
 
                 // Search at MessageList bofere created advertise
                 var advertise = await MessageList.find(x => x._message.id == message.id);
@@ -365,6 +431,8 @@ client.on('message', async message => {
                     isAdvertiserTank = false;
                 }
 
+                await insertBoostRow(advertise);
+
                 // Add reacts to the message
                 await message.react('734394556371697794') // DPS
                     .then(() => message.react('734394557684383775')) // TANK
@@ -381,9 +449,32 @@ client.on('message', async message => {
                 newMsg.setDescription(`**New boost created!\nBoost Id` + "```" + `${message.id}` + "```" +`\n<@&734454074467942903> <@&734454021343019159> <@&734453923665936394>**`);
             
                 await client.channels.cache.get(webhookToChannelId).send(newMsg); 
+
             }
         }
-    }  
+    } 
+    // Modified webhooks, converting to the RichEmbed and filling inside
+    if (message.channel.id === commandChannelId && !message.author.bot) {
+        if (message.content.startsWith("//inrole")) {
+            let roleName = message.content.split(" ").slice(1).join(" ");
+
+            //Filtering the guild members only keeping those with the role
+            //Then mapping the filtered array to their usernames
+            let membersWithRole = message.guild.members.filter(member => {
+                return member.roles.find("name", roleName);
+            }).map(member => {
+                return member.user.username;
+            })
+
+            let embed = new discord.RichEmbed({
+                "title": `Users with the ${roleName} role`,
+                "description": membersWithRole.join("\n"),
+                "color": 0xFFFF
+            });
+
+            return message.channel.send({ embed });
+        }
+    } 
 });
 
 
@@ -1315,6 +1406,8 @@ client.on('messageReactionAdd', async (reaction, user) => {
 
                     await currAdv._message.edit(tempMsg);
 
+                    await updateBoostRow(currAdv);
+
                     let reactions = await currAdv._message.reactions;
                     let rec = await reactions.cache.map(reac => reac);
 
@@ -1337,6 +1430,8 @@ client.on('messageReactionAdd', async (reaction, user) => {
                 // Remove all another emojis and change adv. status CANCELED=true
                 else if (reaction.emoji.id === '734367159148347392' && !currAdv._isCanceled) {
                     currAdv._isCanceled = true;
+
+                    await updateBoostRow(currAdv);
 
                     // edit message content
                     let tempMsg = currAdv._message.embeds[0];
@@ -1363,8 +1458,11 @@ client.on('messageReactionAdd', async (reaction, user) => {
                 else if (reaction.emoji.id === '734372934902218802' && !currAdv._isCompleted) {
                     currAdv._isCompleted = true;
 
+                    await updateBoostRow(currAdv);
+
                     // edit message content
                     let tempMsg = currAdv._message.embeds[0];
+
 
                     tempMsg.fields = [];
                     tempMsg.setColor('#03fcad');
@@ -1384,8 +1482,7 @@ client.on('messageReactionAdd', async (reaction, user) => {
                         }
                     });
 
-                    // TODO Add balances who are boosters
-                    console.log(`${currAdv._message.id} is completed, balances will be added soon to boosters`);
+                    console.log(`${currAdv._message.id} is completed, balances will be added soon. You can check your balance`);
                 }
             } 
             else {
