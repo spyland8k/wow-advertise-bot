@@ -163,8 +163,61 @@ async function modifyWebhook(embed) {
     return newEmbed
 }
 
-async function insertNewBooster(){
+async function getBoosterBalance(user){
+    console.log(`Spreadsheet booster balance start at ${new Date().toLocaleString()}`);
+    await doc.useServiceAccountAuth(require('./client_secret.json'));
+    await doc.loadInfo();
 
+    const sheet = doc.sheetsByIndex[1];
+
+    var rows = await sheet.getRows();
+    try {
+        // Find specific row which is matches with advertiseId
+        var boosterId = user.id;
+        var balance = 0;
+        // Search all of rows
+        for (let row of rows) {
+            // Which row.BoostId match with advertiseId(message id)
+            if (boosterId === row.BoosterId) {
+                balance = row.Balance;
+            }
+        }
+    } catch (error) {
+        console.log(`Error while getBoosterBalance ${error}`)
+    }
+    console.log(`Spreadsheet booster balance end at ${new Date().toLocaleString()}`);
+
+    return balance;
+}
+
+async function insertBoosterRow(user){
+    await doc.useServiceAccountAuth(require('./client_secret.json'));
+    await doc.loadInfo();
+
+    const sheet = doc.sheetsByIndex[1];
+
+    const rows = await sheet.getRows();
+
+    try {
+        let isExist = false;
+        for (let row of rows) {
+            if ((user.id === row.BoosterId)){
+                isExist = true;
+            }
+            
+        }
+
+        if (!isExist){
+            await sheet.addRow({
+                BoosterId: user.id,
+                BoosterTag: user.tag,
+                RegisteredAt: new Date().toLocaleString()
+            });
+            console.log(`Booster added to sheet ${user.tag}`);
+        }
+    } catch (error) {
+        console.log(`Error while insertNewBooster ${error}`)
+    }
 }
 
 async function insertBoostRow(advertise){
@@ -177,7 +230,7 @@ async function insertBoostRow(advertise){
     try {
         let advertiseLog = new AdvertiseLog(advertise);
 
-        const newRow = await sheet.addRow({
+        await sheet.addRow({
             BoostId: advertiseLog._boostId,
             BoostPrice: advertiseLog._boostPrice,
             PublishedDate: advertiseLog._publishedDate,
@@ -188,7 +241,7 @@ async function insertBoostRow(advertise){
         );
 
     } catch (error) {
-        console.log(`Error while insert data spreadsheet ${error}`)
+        console.log(`Error while insertBoostRow ${error}`)
     }
 }
 
@@ -201,7 +254,7 @@ async function modifyAdvertiseLog(advertise, row){
         let advertiserPrice = Math.round((parseInt(row.BoostPrice) * advertiserCut));
         let boosterPrice = Math.round((parseInt(row.BoostPrice) * boosterCut));
 
-        row.CompleteDate = new Date().toLocaleString();
+        row.CompletedDate = new Date().toLocaleString();
         row.AdvertiseCut = advertiserPrice;
         row.DpsBooster = advertise._dpsBoosters[0].id;
         row.DpsBoosterCut = boosterPrice;
@@ -224,16 +277,22 @@ async function updateBoostRow(advertise){
     const sheet = doc.sheetsByIndex[0];
 
     var rows = await sheet.getRows();
-    // Find specific row which is matches with advertiseId
-    var advertiseId = advertise._message.id;
-    // Search all of rows
-    for (let row of rows) {
-        // Which row.BoostId match with advertiseId(message id)
-        if (advertiseId === row.BoostId) {
-            row = await modifyAdvertiseLog(advertise, row);
-            await row.save();
+
+    try {
+        // Find specific row which is matches with advertiseId
+        var advertiseId = advertise._message.id;
+        // Search all of rows
+        for (let row of rows) {
+            // Which row.BoostId match with advertiseId(message id)
+            if (advertiseId === row.BoostId) {
+                row = await modifyAdvertiseLog(advertise, row);
+                await row.save();
+            }
         }
+    } catch (error) {
+        console.log(`Error while updateBoostRow ${error}`)
     }
+    
 
     console.log(`Spreadsheet update end at ${new Date().toLocaleString()}`);
 }
@@ -454,28 +513,29 @@ client.on('message', async message => {
         }
     } 
     // Modified webhooks, converting to the RichEmbed and filling inside
-    if (message.channel.id === commandChannelId && !message.author.bot) {
-        if (message.content.startsWith("//inrole")) {
-            let roleName = message.content.split(" ").slice(1).join(" ");
+    if (message.channel.id === commandChannelId && !message.author.bot) { 
+        if (message.content.startsWith("-balance")) {
 
-            //Filtering the guild members only keeping those with the role
-            //Then mapping the filtered array to their usernames
-            let membersWithRole = message.guild.members.filter(member => {
-                return member.roles.find("name", roleName);
-            }).map(member => {
-                return member.user.username;
-            })
-
-            let embed = new discord.RichEmbed({
-                "title": `Users with the ${roleName} role`,
-                "description": membersWithRole.join("\n"),
-                "color": 0xFFFF
-            });
-
-            return message.channel.send({ embed });
+            let balance = await getBoosterBalance(message.author);
+            message.reply(`your balance: **${balance}** <:gold:735477957388402690>`);
         }
     } 
 });
+
+client.on('guildMemberUpdate', async member => {
+    // Specific role which user get this role
+    var roleId = "735230459650506772";
+    //var userRoles = member.roles.cache.find(r => r.id === roleId);
+
+    // if member in specific role take it otherwise skip
+    var res = member.guild.roles.cache.get(roleId).members.get(member.id);
+
+    if(res){
+        //which member takes a booster role then add him to sheet
+        await insertBoosterRow(member.user);        
+    }
+});
+
 
 
 async function addDps(advertise, user) {
@@ -1383,8 +1443,8 @@ client.on('messageReactionAdd', async (reaction, user) => {
             else {
                 console.log(`Advertise cannot reactable! It can be Full, Canceled or Completed!`);
             }
-
-            if (currAdv._advertiser == user) {
+            //if (currAdv._advertiser == user) {
+            if (user) {
                 let boosterSize = currAdv._dpsBoosters.length;
                 boosterSize = boosterSize + currAdv._dps2Boosters.length;
                 boosterSize = boosterSize + currAdv._tankBoosters.length;
