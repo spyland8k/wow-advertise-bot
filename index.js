@@ -2,9 +2,8 @@
 require('dotenv').config();
 
 const Discord = require('discord.js');
-const { prefix, token } = require('./config.json');
+const { prefix, config } = require('./config.json');
 const { GoogleSpreadsheet } = require('google-spreadsheet');
-const { promisify } = require('util');
 
 const client = new Discord.Client({ partials: ['MESSAGE', 'CHANNEL', 'REACTION'] });
 const boosterCut = 0.175; // Booster Rate
