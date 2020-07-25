@@ -2,7 +2,7 @@
 require('dotenv').config();
 
 const Discord = require('discord.js');
-const config = require('./config.json');
+const { prefix, token } = require('./config.json');
 const { GoogleSpreadsheet } = require('google-spreadsheet');
 const { promisify } = require('util');
 
@@ -163,63 +163,6 @@ async function modifyWebhook(embed) {
     return newEmbed
 }
 
-async function getBoosterBalance(user){
-    console.log(`Spreadsheet booster balance start at ${new Date().toLocaleString()}`);
-    await doc.useServiceAccountAuth(require('./client_secret.json'));
-    await doc.loadInfo();
-
-    const sheet = doc.sheetsByIndex[1];
-
-    var rows = await sheet.getRows();
-    try {
-        // Find specific row which is matches with advertiseId
-        var boosterId = user.id;
-        var balance = 0;
-        // Search all of rows
-        for (let row of rows) {
-            // Which row.BoostId match with advertiseId(message id)
-            if (boosterId === row.BoosterId) {
-                balance = row.Balance;
-            }
-        }
-    } catch (error) {
-        console.log(`Error while getBoosterBalance ${error}`)
-    }
-    console.log(`Spreadsheet booster balance end at ${new Date().toLocaleString()}`);
-
-    return balance;
-}
-
-async function insertBoosterRow(user){
-    await doc.useServiceAccountAuth(require('./client_secret.json'));
-    await doc.loadInfo();
-
-    const sheet = doc.sheetsByIndex[1];
-
-    const rows = await sheet.getRows();
-
-    try {
-        let isExist = false;
-        for (let row of rows) {
-            if ((user.id === row.BoosterId)){
-                isExist = true;
-            }
-            
-        }
-
-        if (!isExist){
-            await sheet.addRow({
-                BoosterId: user.id,
-                BoosterTag: user.tag,
-                RegisteredAt: new Date().toLocaleString()
-            });
-            console.log(`Booster added to sheet ${user.tag}`);
-        }
-    } catch (error) {
-        console.log(`Error while insertNewBooster ${error}`)
-    }
-}
-
 async function insertBoostRow(advertise){
 
     await doc.useServiceAccountAuth(require('./client_secret.json'));
@@ -245,6 +188,7 @@ async function insertBoostRow(advertise){
     }
 }
 
+// Binds coming from Json datas to AdvertiseLog(object)
 async function modifyAdvertiseLog(advertise, row){
     row.isCompleted = advertise._isCompleted;
     row.isCanceled = advertise._isCanceled;
@@ -269,6 +213,7 @@ async function modifyAdvertiseLog(advertise, row){
     return row;
 }
 
+// Modify 
 async function updateBoostRow(advertise){
     console.log(`Spreadsheet update start at ${new Date().toLocaleString()}`);
     await doc.useServiceAccountAuth(require('./client_secret.json'));
@@ -292,9 +237,131 @@ async function updateBoostRow(advertise){
     } catch (error) {
         console.log(`Error while updateBoostRow ${error}`)
     }
-    
+
 
     console.log(`Spreadsheet update end at ${new Date().toLocaleString()}`);
+}
+
+// When new member registered at Booster role insert him to sheet
+async function insertBoosterRow(user) {
+    await doc.useServiceAccountAuth(require('./client_secret.json'));
+    await doc.loadInfo();
+
+    const sheet = doc.sheetsByIndex[1];
+
+    const rows = await sheet.getRows();
+
+    try {
+        let isExist = false;
+        for (let row of rows) {
+            if ((user.id === row.BoosterId)) {
+                isExist = true;
+            }
+
+        }
+
+        if (!isExist) {
+            await sheet.addRow({
+                BoosterId: user.id,
+                BoosterTag: user.tag,
+                Balance: 0,
+                RegisteredAt: new Date().toLocaleString()
+            });
+            console.log(`Booster added to sheet ${user.tag}`);
+        }
+    } catch (error) {
+        console.log(`Error while insertNewBooster ${error}`)
+    }
+}
+
+// Get current user balance
+async function getBoosterBalance(user) {
+    console.log(`Spreadsheet booster balance start at ${new Date().toLocaleString()}`);
+    await doc.useServiceAccountAuth(require('./client_secret.json'));
+    await doc.loadInfo();
+
+    const sheet = doc.sheetsByIndex[1];
+
+    var rows = await sheet.getRows();
+    try {
+        // Find specific row which is matches with advertiseId
+        var boosterId = user.id;
+        var balance = 0;
+        // Search all of rows
+        for (let row of rows) {
+            if (boosterId === row.BoosterId) {
+                balance = row.Balance;
+            }
+        }
+    } catch (error) {
+        console.log(`Error while getBoosterBalance ${error}`)
+    }
+    console.log(`Spreadsheet booster balance end at ${new Date().toLocaleString()}`);
+
+    return balance;
+}
+
+// Add money to user balance
+async function depositBalance(user, amount){
+    await doc.useServiceAccountAuth(require('./client_secret.json'));
+    await doc.loadInfo();
+
+    // Booster Balance
+    const sheet = doc.sheetsByIndex[1];
+
+    var rows = await sheet.getRows();
+
+    // Find specific row which is matches with advertiseId
+    var userId = user.id;
+    // Search all of rows
+    try {
+        for (let row of rows) {
+            if (userId === row.BoosterId) {
+                currentAmount = parseInt(row.Balance);
+                depositAmount = parseInt(amount);
+                row.Balance = currentAmount + depositAmount;
+                row.UpdatedAt = new Date().toLocaleString();
+                await row.save();
+                return (`${amount} deposit successful to <@${user.id}> balance!`);
+            }
+        }
+    } catch (error) {
+        console.log(`Error while addBoosterBalance ${user} - ${error}`)
+    }
+}
+
+// Withdraw money to user balance
+async function withdrawBalance(user, amount) {
+    await doc.useServiceAccountAuth(require('./client_secret.json'));
+    await doc.loadInfo();
+
+    // Booster Balance
+    const sheet = doc.sheetsByIndex[1];
+
+    var rows = await sheet.getRows();
+
+    // Find specific row which is matches with advertiseId
+    var userId = user.id;
+    // Search all of rows
+    try {
+        for (let row of rows) {
+            if (userId === row.BoosterId) {
+                currentAmount = parseInt(row.Balance);
+                withdrawAmount = parseInt(amount);
+                if (currentAmount >= withdrawAmount) {
+                    row.Balance = currentAmount - withdrawAmount;
+                    row.UpdatedAt = new Date().toLocaleString();
+                    await row.save();
+                    return (`${withdrawAmount} withdrawals successful from <@${user.id}> balance!`);
+                }
+                else{
+                    return (`The amount ${withdrawAmount} cannot be higher than <@${user.id}> balance!`);
+                }
+            }
+        }
+    } catch (error) {
+        console.log(`Error while withdrawBalance ${user} - ${error}`)
+    }
 }
 
 client.on('ready', async () => {
@@ -514,21 +581,69 @@ client.on('message', async message => {
     } 
     // Modified webhooks, converting to the RichEmbed and filling inside
     if (message.channel.id === commandChannelId && !message.author.bot) { 
-        if (message.content.startsWith("-balance")) {
+        let boosterRoleId = "735230459650506772"; 
 
+        const args = message.content.slice(prefix.length).trim().split(/ +/);
+        const command = args.shift().toLowerCase();
+        const regexp = /\D+/g;
+
+        if (command === 'balance') {
             let balance = await getBoosterBalance(message.author);
             message.reply(`your balance: **${balance}** <:gold:735477957388402690>`);
+        }
+        else if (command === 'withdraw') {
+            if ((!args[0] || !args[1]) == '') {
+                // Return user with by ID
+                let user = await client.users.fetch(args[0].replace(regexp, ''));
+                let isNum = /^\d+$/.test(args[1]);
+
+                if (user && isNum) {
+                    let transactionMsg = await withdrawBalance(user, args[1]);
+                    if (transactionMsg) {
+                        message.reply(`${transactionMsg}`);
+                    }
+                    else {
+                        message.reply(`<@${user.id}> don't have a role!`);
+                    }
+                } else {
+                    message.reply(`amount must be digits, not include comma, dot etc.`);
+                }
+            } else {
+                message.reply(`ex: ${prefix}deposit @user#1234 30100`);
+            }
+        }
+        else if (command === 'deposit') {
+            if((!args[0] || !args[1]) == ''){
+                // Return user with by ID
+                let user = await client.users.fetch(args[0].replace(regexp, ''));
+                let isNum = /^\d+$/.test(args[1]);
+
+                if(user && isNum){
+                    let transactionMsg = await depositBalance(user, args[1]);
+                    if(transactionMsg){
+                        message.reply(`${transactionMsg}`);
+                    }
+                    else{
+                        message.reply(`<@${user.id}> don't have a role!`);
+                    }
+                }else{
+                    message.reply(`amount must be digits, not include comma, dot etc.`);
+                }
+            }else{
+                message.reply(`ex: ${prefix}deposit @user#1234 30100`);
+            }
         }
     } 
 });
 
+
 client.on('guildMemberUpdate', async member => {
     // Specific role which user get this role
-    var roleId = "735230459650506772";
+    let boosterRoleId = "735230459650506772"; 
     //var userRoles = member.roles.cache.find(r => r.id === roleId);
 
     // if member in specific role take it otherwise skip
-    var res = member.guild.roles.cache.get(roleId).members.get(member.id);
+    let res = member.guild.roles.cache.get(boosterRoleId).members.get(member.id);
 
     if(res){
         //which member takes a booster role then add him to sheet
@@ -536,23 +651,15 @@ client.on('guildMemberUpdate', async member => {
     }
 });
 
-
-
 async function addDps(advertise, user) {
-    //var user = advertise._dpsUsers[0];
-    var message = advertise._message;
-
     if (!advertise._tankUsers.includes(user) && !advertise._healerUsers.includes(user)) {
         if (advertise._dpsBoosters.length == 0) {
             // Get first user in dpsUsers
             advertise._dpsBoosters.push(user);
-            //advertise._boosterList.push(user);
 
-            // TODO might be problem here
             let tmpMsg = advertise._message.embeds[0];
             let tmpEmbed = new Discord.MessageEmbed(tmpMsg);
 
-            // TODO Add icon to message if user react key
             // Modified embed message
             if(advertise._isDpsKey){
                 tmpEmbed.fields.push({ name: '<:dps:734394556371697794>', value: `<@${user.id}><:keys:734119765173600331>`, inline: true });
@@ -565,11 +672,9 @@ async function addDps(advertise, user) {
         }
     }
     else if (!advertise._healerUsers.includes(user) && !advertise._dpsBoosters.includes(user) && !advertise._tankBoosters.includes(user)) {
-        // TODO Might give error when, dps and tank in same user.
         if (advertise._dpsBoosters.length == 0) {
             // Get first user in dpsUsers
             advertise._dpsBoosters.push(user);
-            //advertise._boosterList.push(user);
 
             let tmpMsg = advertise._message.embeds[0];
             let tmpEmbed = new Discord.MessageEmbed(tmpMsg);
@@ -588,13 +693,10 @@ async function addDps(advertise, user) {
 }
 
 async function addTank(advertise, user) {
-    //var user = advertise._user;
-    var message = advertise._message;
     if (!advertise._dpsUsers.includes(user) && !advertise._healerUsers.includes(user) && !advertise._dps2Users.includes(user)) {
         if (advertise._tankBoosters.length == 0) {
             // Get first user in tankBoosters
             advertise._tankBoosters.push(user);
-            //boosterList.push(user);
 
             let tmpMsg = advertise._message.embeds[0];
             let tmpEmbed = new Discord.MessageEmbed(tmpMsg);
@@ -610,11 +712,9 @@ async function addTank(advertise, user) {
         }
     }
     else if (!advertise._tankUsers.includes(user) && !advertise._dpsBoosters.includes(user) && !advertise._healerBoosters.includes(user)) {
-        // TODO Might give error when, healer and dps in same user.
         if (advertise._tankBoosters.length == 0) {
             // Get first user in tankBoosters
             advertise._tankBoosters.push(user);
-            //boosterList.push(user);
 
             let tmpMsg = advertise._message.embeds[0];
             let tmpEmbed = new Discord.MessageEmbed(tmpMsg);
@@ -632,13 +732,10 @@ async function addTank(advertise, user) {
 }
 
 async function addHealer(advertise, user) {
-    //var user = advertise._user;
-    var message = advertise._message;
     if (!advertise._dpsUsers.includes(user) && !advertise._tankUsers.includes(user) && !advertise._dps2Users.includes(user)) {
         if (advertise._healerBoosters.length == 0) {
             // Get first user in healerBoosters
             advertise._healerBoosters.push(user);
-            //boosterList.push(user);
 
             let tmpMsg = advertise._message.embeds[0];
             let tmpEmbed = new Discord.MessageEmbed(tmpMsg);
@@ -654,11 +751,9 @@ async function addHealer(advertise, user) {
         }
     }
     else if (!advertise._tankUsers.includes(user) && !advertise._dpsBoosters.includes(user) && !advertise._healerBoosters.includes(user)) {
-        // TODO Might give error when, healer and dps in same user.
         if (advertise._healerBoosters.length == 0) {
             // Get first user in healerBoosters
             advertise._healerBoosters.push(user);
-            //boosterList.push(user);
 
             let tmpMsg = advertise._message.embeds[0];
             let tmpEmbed = new Discord.MessageEmbed(tmpMsg);
@@ -674,7 +769,6 @@ async function addHealer(advertise, user) {
         }
     }
     else if (!advertise._dpsUsers.includes(user) && !advertise._tankBoosters.includes(user) && !advertise._healerBoosters.includes(user)) {
-        // TODO Might give error when, healer and dps in same user.
         if (advertise._healerBoosters.length == 0) {
             // Get first user in healerBoosters
             advertise._healerBoosters.push(user);
@@ -695,15 +789,11 @@ async function addHealer(advertise, user) {
 }
 
 async function addDps2(advertise, user) {
-    //var user = advertise._user;
-    var message = advertise._message;
     if (!advertise._tankUsers.includes(user) && !advertise._healerUsers.includes(user) && !advertise._dpsUsers.includes(user)) {
         if (advertise._dps2Boosters.length == 0) {
             // Get first user in dpsUsers
             advertise._dps2Boosters.push(user);
-            //advertise._boosterList.push(user);
 
-            // TODO might be problem here
             let tmpMsg = advertise._message.embeds[0];
             let tmpEmbed = new Discord.MessageEmbed(tmpMsg);
 
@@ -718,11 +808,9 @@ async function addDps2(advertise, user) {
         }
     }
     else if (!advertise._healerUsers.includes(user) && !advertise._dps2Boosters.includes(user) && !advertise._tankBoosters.includes(user)) {
-        // TODO Might give error when, dps and tank in same user.
         if (advertise._dps2Boosters.length == 0) {
             // Get first user in dpsUsers
             advertise._dps2Boosters.push(user);
-            //advertise._boosterList.push(user);
 
             let tmpMsg = advertise._message.embeds[0];
             let tmpEmbed = new Discord.MessageEmbed(tmpMsg);
@@ -754,7 +842,6 @@ async function removeDps(advertise, user) {
                 temp.push({ name: '<:dps:734394556371697794>', value: `<@${user.id}>`, inline: true });
             }
             
-
             for (let i = 0; i < tmpEmbed.fields.length; i++) {
                 if (tmpEmbed.fields[i].value == temp[0].value && tmpEmbed.fields[i].name == temp[0].name) {
                     tmpEmbed.fields.splice(i, 1);
@@ -804,7 +891,6 @@ async function removeDps(advertise, user) {
                     await addHealer(advertise, user);
                 }
             }
-
         }
     }
 }
@@ -888,9 +974,6 @@ async function removeTank(advertise, user) {
 }
 
 async function removeHealer(advertise, user) {
-    //user = advertise._user;
-    var message = advertise._message;
-
     if (advertise._healerUsers.includes(user)) {
         //let tmpUser = user;
         //let newUser = dpsUsers[0];
@@ -1065,7 +1148,7 @@ async function dpsReplace(advertise, user){
         // New modified message
         await advertise._message.edit(tmpEmbed);
 
-        // Delete tepUser from dpsUsers
+        // Delete tempUser from dpsUsers
         let idx = advertise._dpsUsers.indexOf(tempUser);
         if (idx > -1) {
             advertise._dpsUsers.splice(idx, 1);
@@ -1241,17 +1324,15 @@ async function healerReplace(advertise, user) {
 
 client.on('messageReactionAdd', async (reaction, user) => {
     if(user.bot){
-        
     }
+
     var currAdv = await MessageList.find(x => x._message.id == reaction.message.id);
 
-    let channel = reaction.message.channel.id;
-    if ((!user.bot && currAdv) && (channel == webhookToChannelId)) {
+    if ((!user.bot && currAdv) && (reaction.message.channel.id == webhookToChannelId)) {
         // Find which advertise reacted
-        //let advertiser = currAdv._advertiser;
         if (currAdv) {
-            
-            //If is advertise isnt full then catch reactions
+            // If is advertise isnt full then catch reactions
+            // Boosters can react those
             if(!currAdv._isFull && !currAdv._isCanceled && !currAdv.isComplete){
                 // Dps Queue
                 if (reaction.emoji.id === '734394556371697794') {
@@ -1438,17 +1519,16 @@ client.on('messageReactionAdd', async (reaction, user) => {
                         console.log(`${user.tag} have to select ant role before click KEY!`);
                     }
                 }
-            
             }
             else {
                 console.log(`Advertise cannot reactable! It can be Full, Canceled or Completed!`);
             }
             //if (currAdv._advertiser == user) {
-            if (user) {
+            if (currAdv._advertiser == user) {
                 let boosterSize = currAdv._dpsBoosters.length;
-                boosterSize = boosterSize + currAdv._dps2Boosters.length;
-                boosterSize = boosterSize + currAdv._tankBoosters.length;
-                boosterSize = boosterSize + currAdv._healerBoosters.length;
+                boosterSize += currAdv._dps2Boosters.length;
+                boosterSize += currAdv._tankBoosters.length;
+                boosterSize += currAdv._healerBoosters.length;
 
                 // Advertise should be 4 boosters
                 // When DONE button reacted, 
@@ -1519,12 +1599,23 @@ client.on('messageReactionAdd', async (reaction, user) => {
                     currAdv._isCompleted = true;
 
                     await updateBoostRow(currAdv);
+                    
+                    const total = currAdv._message.embeds[0].fields[6].value;
+                    const advertiserPrice = Math.round((parseInt(total) * advertiserCut));
+                    const boosterPrice = Math.round((parseInt(total) * boosterCut));
+
+                    await depositBalance(currAdv._advertiser, advertiserPrice);
+
+                    await depositBalance(currAdv._dpsBoosters[0], boosterPrice);
+                    await depositBalance(currAdv._dps2Boosters[0], boosterPrice);
+                    await depositBalance(currAdv._healerBoosters[0], boosterPrice);
+                    await depositBalance(currAdv._tankBoosters[0], boosterPrice);
 
                     // edit message content
                     let tempMsg = currAdv._message.embeds[0];
 
 
-                    tempMsg.fields = [];
+                    //tempMsg.fields = [];
                     tempMsg.setColor('#03fcad');
                     tempMsg.setTitle('Boosting Completed!');
                     tempMsg.setThumbnail('https://i.ibb.co/d6q1b40/runfinish.png');
@@ -1544,13 +1635,14 @@ client.on('messageReactionAdd', async (reaction, user) => {
 
                     console.log(`${currAdv._message.id} is completed, balances will be added soon. You can check your balance`);
                 }
-            } 
-            else {
-                console.log(`You're NOT a Advertiser! ${user.tag}`);
-            } 
+                // Only advertiser can react those 
+                else {
+                    console.log(`You're NOT a Advertiser! ${user.tag}`);
+                } 
+            }
             
         } else {
-            console.log(`Advertise not registered! Please contact`)
+            reaction.message.reply(`Advertise not registered! Please contact` + "```" + `${reaction.message.id}` + "```");
         }
     }
 });
