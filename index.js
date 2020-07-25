@@ -17,7 +17,7 @@ const webhookToChannelId = "731523810662154311";
 const commandChannelId = "731232365388759113";
 
 // The spreadsheet ID from the url
-const doc = new GoogleSpreadsheet('1Gcxal2auntcl37JUir26PUpyeZCMJwkYzn3o24CEzsY');
+const doc = new GoogleSpreadsheet(config.spreadSheetId);
 
 client.login(process.env.DISCORD_TOKEN);
 
