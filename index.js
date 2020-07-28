@@ -1502,7 +1502,7 @@ client.on('messageReactionAdd', async (reaction, user) => {
                     
                     await client.channels.cache.get(WEBHOOK_TO).send(newMsg);
                 }else{
-                    console.log(`Advertise ${currAdv.message.id} is not Full`);
+                    console.log(`Advertise ${currAdv._message.id} is not Full`);
                 }
                 // When CANCELED button reacted, Change advertise content then
                 // Remove all another emojis and change adv. status CANCELED=true
@@ -1530,7 +1530,7 @@ client.on('messageReactionAdd', async (reaction, user) => {
                         }
                     });
                 }else{
-                    console.log(`Advertise ${currAdv.message.id} is already Canceled`);
+                    console.log(`Advertise ${currAdv._message.id} is already Canceled`);
                 }
                 // When FINISHED button reacted, 
                 // Remove all another emojis and change adv. status COMPLETED=true
@@ -1572,7 +1572,7 @@ client.on('messageReactionAdd', async (reaction, user) => {
 
                     console.log(`${currAdv._message.id} is completed, balances will be added soon. You can check your balance`);
                 }else{
-                    console.log(`Advertise ${currAdv.message.id} is already Completed`);
+                    console.log(`Advertise ${currAdv._message.id} is already Completed`);
                 }
             }// Only advertiser can react those 
             else {
