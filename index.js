@@ -1501,10 +1501,12 @@ client.on('messageReactionAdd', async (reaction, user) => {
                         + "```\\w " + currAdv._message.embeds[0].field[9].value + " inv```");
                     
                     await client.channels.cache.get(WEBHOOK_TO).send(newMsg);
+                }else{
+                    console.log(`Advertise ${currAdv.message.id} is not Full`);
                 }
                 // When CANCELED button reacted, Change advertise content then
                 // Remove all another emojis and change adv. status CANCELED=true
-                else if (reaction.emoji.id === '734367159148347392' && !currAdv._isCanceled) {
+                if (reaction.emoji.id === '734367159148347392' && !currAdv._isCanceled) {
                     currAdv._isCanceled = true;
 
                     // Update related row at sheet
@@ -1527,10 +1529,12 @@ client.on('messageReactionAdd', async (reaction, user) => {
                             r.remove();
                         }
                     });
+                }else{
+                    console.log(`Advertise ${currAdv.message.id} is already Canceled`);
                 }
                 // When FINISHED button reacted, 
                 // Remove all another emojis and change adv. status COMPLETED=true
-                else if (reaction.emoji.id === '734372934902218802' && !currAdv._isCompleted) {
+                if (reaction.emoji.id === '734372934902218802' && !currAdv._isCompleted) {
                     currAdv._isCompleted = true;
 
                     // Update related row at sheet
@@ -1567,12 +1571,13 @@ client.on('messageReactionAdd', async (reaction, user) => {
                     });
 
                     console.log(`${currAdv._message.id} is completed, balances will be added soon. You can check your balance`);
+                }else{
+                    console.log(`Advertise ${currAdv.message.id} is already Completed`);
                 }
-                // Only advertiser can react those 
-                else {
-                    console.log(`You're NOT a Advertiser! ${user.tag}`);
-                } 
-            }
+            }// Only advertiser can react those 
+            else {
+                console.log(`You're NOT a Advertiser! ${user.tag}`);
+            } 
             
         } else {
             reaction.message.reply(`Advertise not registered! Please contact` + "```" + `${reaction.message.id}` + "```");
