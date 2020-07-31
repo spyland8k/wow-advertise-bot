@@ -4,26 +4,52 @@ require('dotenv').config();
 const Discord = require('discord.js');
 const { prefix, config } = require('./config.json');
 const { GoogleSpreadsheet } = require('google-spreadsheet');
-
 const client = new Discord.Client({ partials: ['MESSAGE', 'CHANNEL', 'REACTION'] });
-const BOOSTER_CUT = 0.175; // Booster Rate
-const ADVERTISER_CUT = 0.25; // Advertiser Rate
+// The spreadsheet ID from the url
+const doc = new GoogleSpreadsheet('1Gcxal2auntcl37JUir26PUpyeZCMJwkYzn3o24CEzsY');
+
+// REGEX FIELD
 // Non-digits
 const nonDigits = /\D+/g;
 // Digits
 const digits = /\d+/g;
 // Whitespace
 const wSpace = / +/;
+// Valid Discord Tag (Test#1234)
+const validTag = /([a-zA-Z0-9]+)?[#]([0-9]{4})+/g;
 
-// Role images
+// STACK ENUM FIELD
+const ARMOR_STACK = {
+    NONE: "No Armor Stacked",
+    CLOTH: "Cloth Stacked",
+    LEATHER: "Leather Stacked",
+    PLATE: "Plate Stacked",
+    MAIL: "Mail Stacked"
+}
+
+// PRICE FIELD x*100
+const BOOSTER_CUT = 0.175;
+const ADVERTISER_CUT = 0.25;
+
+// ROLE ICONs FIELD
 const KEY_ICON = '<:keys:734119765173600331>';
 const DPS_ICON = '<:dps:734394556371697794>';
 const DPS2_ICON = '<:dps2:734394556744728628>';
 const HEALER_ICON = '<:healer:734394557294182520>';
 const TANK_ICON = '<:tank:734394557684383775>';
 const GOLD_ICON = '<:gold:735477957388402690>';
+const CLOTH_ICON = '<:cloth:731617838715895850>';
+const LEATHER_ICON = '<:leather:731617839370469396>';
+const PLATE_ICON = '<:plate:731617839039119452>';
+const MAIL_ICON = '<:mail:731617839265611898>';
 
+// ROLE FIELD
+const CLOTH_STACK = '<@&738873715319767162>';
+const LEATHER_STACK = '<@&738861053856841909>';
+const PLATE_STACK = '<@&738873660076458037>';
+const MAIL_STACK = '<@&738873586596446248>';
 
+// CHANNELS ID FIELD
 // Webhook messages drops here (channel id)
 const WEBHOOK_FROM = "731543421340221521";
 // Routing to booster channel coming webhook
@@ -31,36 +57,34 @@ const WEBHOOK_TO = "731523810662154311";
 // Command channel
 const COMMAND_CH = "731232365388759113";
 
-// The spreadsheet ID from the url
-const doc = new GoogleSpreadsheet('1Gcxal2auntcl37JUir26PUpyeZCMJwkYzn3o24CEzsY');
-
 client.login(process.env.DISCORD_TOKEN);
 
 class Advertise {
     constructor(message, advertiser, isFull, isCompleted, isCanceled, 
-             dpsUsers, dpsBoosters, 
-             tankUsers, tankBoosters, 
-             healerUsers, healerBoosters, 
-             dps2Users, dps2Boosters) {
+            dpsUsers, dpsBoosters,
+            tankUsers, tankBoosters,
+            healerUsers, healerBoosters,
+            dps2Users, dps2Boosters) {
         this._message = message
         this._advertiser = advertiser;
+        this._stack = 'No Armor Stacked';
         this._isFull = isFull;
         this._isCompleted = isCompleted;
         this._isCanceled = isCanceled;
         
-        //this._isDpsKey = isDpsKey;
+        this._isDpsKey = Boolean(false);
         this._dpsUsers = dpsUsers;
         this._dpsBoosters = dpsBoosters;
 
-        //this._isDps2Key = isDps2Key;
+        this._isDps2Key = Boolean(false);
         this._dps2Users = dps2Users;
         this._dps2Boosters = dps2Boosters;
 
-        //this._isTankKey = isTankKey;
+        this._isTankKey = Boolean(false);
         this._tankUsers = tankUsers;
         this._tankBoosters = tankBoosters;
 
-        //this._isHealerKey = isHealerKey;
+        this._isHealerKey = Boolean(false);
         this._healerUsers = healerUsers;
         this._healerBoosters = healerBoosters;
     }
@@ -94,6 +118,7 @@ var isAdvertiserDps = Boolean(false);
 var isAdvertiserTank = Boolean(false);
 var isAdvertiserHealer = Boolean(false);
 var isAdvertiserKey = Boolean(false);
+var advertiseStack = ARMOR_STACK.NONE;
 
 async function newAdvertise(message, advertiser, isFull, isCompleted, isCanceled) {
     let dpsBoosters = Array();
@@ -138,6 +163,17 @@ async function modifyWebhook(embed) {
                     newEmbed.addField('Advertiser', `<@${u.id}>`, true);
             });
         }
+        else if (item.name === 'Armor Stacked') {
+            if (item.value === ARMOR_STACK.CLOTH) {
+                advertiseStack = ARMOR_STACK.CLOTH;
+            } else if (item.value === ARMOR_STACK.LEATHER) {
+                advertiseStack = ARMOR_STACK.LEATHER;
+            } else if (item.value === ARMOR_STACK.PLATE) {
+                advertiseStack = ARMOR_STACK.PLATE;
+            } else if (item.value === ARMOR_STACK.MAIL) {
+                advertiseStack = ARMOR_STACK.MAIL;
+            }
+        }
         else if(item.name === 'Boost Price'){
             newEmbed.addField(item.name, item.value, true);
             newEmbed.addField(`Booster Cut %${BOOSTER_CUT*100}`, (Math.round(parseInt(item.value)*(BOOSTER_CUT))) + GOLD_ICON, true);
@@ -177,7 +213,7 @@ async function modifyWebhook(embed) {
     return newEmbed;
 }
 
-// Binds coming from Json datas to AdvertiseLog(object)
+// Bind datas from Json data to AdvertiseLog(object)
 async function modifyAdvertiseLog(advertise, row) {
     row.isCompleted = advertise._isCompleted;
     row.isCanceled = advertise._isCanceled;
@@ -319,7 +355,7 @@ async function getBoosterBalance(user) {
 }
 
 // Add money to user balance
-async function depositBalance(user, amount){
+async function depositBalance(opUser, user, amount){
     await doc.useServiceAccountAuth(require('./client_secret.json'));
     await doc.loadInfo();
 
@@ -339,7 +375,9 @@ async function depositBalance(user, amount){
                 row.Balance = currentAmount + depositAmount;
                 row.UpdatedAt = new Date().toLocaleString();
                 await row.save();
-                return (`${amount} deposit successful to <@${user.id}> balance!`);
+                await transactionLog(opUser, user, depositAmount, 'depositBalance');
+
+                return (`${depositAmount} deposit successful to <@${user.id}> balance!`);
             }
         }
     } catch (error) {
@@ -348,7 +386,7 @@ async function depositBalance(user, amount){
 }
 
 // Withdraw money to user balance
-async function withdrawBalance(user, amount) {
+async function withdrawBalance(opUser, user, amount) {
     await doc.useServiceAccountAuth(require('./client_secret.json'));
     await doc.loadInfo();
 
@@ -369,6 +407,8 @@ async function withdrawBalance(user, amount) {
                     row.Balance = currentAmount - withdrawAmount;
                     row.UpdatedAt = new Date().toLocaleString();
                     await row.save();
+                    await transactionLog(opUser, user, withdrawAmount * (-1), 'withdrawBalance');
+
                     return (`${withdrawAmount} withdrawals successful from <@${user.id}> balance!`);
                 }
                 else{
@@ -379,6 +419,25 @@ async function withdrawBalance(user, amount) {
     } catch (error) {
         console.log(`Error while withdrawBalance ${user} - ${error}`)
     }
+}
+
+// All deposit and withdraw transactions storing
+async function transactionLog(opUser, boosterUser, transAmount, detail) {
+    await doc.useServiceAccountAuth(require('./client_secret.json'));
+    await doc.loadInfo();
+
+    const sheet = doc.sheetsByIndex[2];
+
+    await sheet.addRow({
+        OperatedUserId: opUser.id,
+        OperatedUser: opUser.tag,
+        BoosterId: boosterUser.id,
+        Booster: boosterUser.tag,
+        Amount: transAmount,
+        TransactionDate: new Date().toLocaleString(),
+        Detail: detail
+    }
+    );
 }
 
 client.on('ready', async () => {
@@ -451,6 +510,7 @@ client.on('ready', async () => {
                             else if (field.name === '<:healer:734394557294182520>') {
                                 let regexUserId = field.value.replace(nonDigits, "");
                                 let regexResult = field.value.replace(digits, "");
+                                
                                 if (regexResult === '<@><:keys:>') {
                                     createdAdvertise._isHealerKey = true
                                     //Take first 18 digit User Id
@@ -460,6 +520,19 @@ client.on('ready', async () => {
                                 let user = await client.users.fetch(regexUserId);
                                 createdAdvertise._healerBoosters.push(user);
                                 createdAdvertise._healerUsers.push(user);
+                            }
+                            else if (field.name === 'Armor Stacked'){
+                                if (!(field.value === ARMOR_STACK.NONE)){
+                                    if (field.value === ARMOR_STACK.CLOTH) {
+                                        createdAdvertise._stack = ARMOR_STACK.CLOTH;
+                                    } else if (field.value === ARMOR_STACK.LEATHER) {
+                                        createdAdvertise._stack = ARMOR_STACK.LEATHER;
+                                    } else if (field.value === ARMOR_STACK.PLATE) {
+                                        createdAdvertise._stack = ARMOR_STACK.PLATE;
+                                    } else if (field.value === ARMOR_STACK.MAIL) {
+                                        createdAdvertise._stack = ARMOR_STACK.MAIL;
+                                    }
+                                }
                             }
                         }
                         // TODO old messages reactions must be deleted
@@ -556,6 +629,21 @@ client.on('message', async message => {
                     isAdvertiserTank = false;
                 }
 
+                // Check advertise stack type
+                if (!(advertiseStack == ARMOR_STACK.NONE)) {
+                    if (advertiseStack === ARMOR_STACK.CLOTH) {
+                        advertise._stack = ARMOR_STACK.CLOTH;
+                    } else if (advertiseStack === ARMOR_STACK.LEATHER) {
+                        advertise._stack = ARMOR_STACK.LEATHER;
+                    } else if (advertiseStack === ARMOR_STACK.PLATE) {
+                        advertise._stack = ARMOR_STACK.PLATE;
+                    } else if (advertiseStack === ARMOR_STACK.MAIL) {
+                        advertise._stack = ARMOR_STACK.MAIL;
+                    }
+                }
+                // Reset Advertise stack type
+                advertiseStack = ARMOR_STACK.NONE;
+
                 await insertBoostRow(advertise);
 
                 // Add reacts to the message with Promise
@@ -577,11 +665,12 @@ client.on('message', async message => {
             }
         }
     } 
-    // Modified webhooks, converting to the RichEmbed and filling inside
+    // Commands available channel
     if (message.channel.id === COMMAND_CH && !message.author.bot) {
         // Take all parameters which are those sliced with whitespace
         const args = message.content.slice(prefix.length).trim().split(wSpace);
         const command = args.shift().toLowerCase();
+        const opUser = message.author;
 
         if (command === 'balance') {
             let balance = await getBoosterBalance(message.author);
@@ -593,15 +682,13 @@ client.on('message', async message => {
             if ((!args[0] || !args[1]) == '') {
                 // Return user with by ID
                 let user = await client.users.fetch(args[0].replace(nonDigits, ''));
+                
                 let isNum = /^\d+$/.test(args[1]);
 
                 if (user && isNum) {
-                    let transactionMsg = await withdrawBalance(user, args[1]);
+                    let transactionMsg = await withdrawBalance(opUser, user, args[1]);
                     if (transactionMsg) {
                         message.reply(`${transactionMsg}`);
-                    }
-                    else {
-                        message.reply(`<@${user.id}> don't have a role!`);
                     }
                 } else {
                     message.reply(`amount must be digits, not include comma, dot etc.`);
@@ -619,7 +706,7 @@ client.on('message', async message => {
                 let isNum = /^\d+$/.test(args[1]);
 
                 if(user && isNum){
-                    let transactionMsg = await depositBalance(user, args[1]);
+                    let transactionMsg = await depositBalance(opUser, user, args[1]);
                     if(transactionMsg){
                         message.reply(`${transactionMsg}`);
                     }
@@ -657,33 +744,30 @@ function addMessageField(advertise, user, role){
     let tmpEmbed = new Discord.MessageEmbed(tmpMsg);
 
     // Modified embed message
-    switch (role) {
-        case 'dps':
-            if (advertise._isDpsKey) {
-                tmpEmbed.fields.push({ name: DPS_ICON, value: `<@${user.id}>${KEY_ICON}`, inline: true });
-            } else {
-                tmpEmbed.fields.push({ name: DPS_ICON, value: `<@${user.id}>`, inline: true });
-            }
-        case 'dps2':
-            if (advertise._isDps2Key) {
-                tmpEmbed.fields.push({ name: DPS2_ICON, value: `<@${user.id}>${KEY_ICON}`, inline: true });
-            } else {
-                tmpEmbed.fields.push({ name: DPS2_ICON, value: `<@${user.id}>`, inline: true });
-            }
-        case 'healer':
-            if (advertise._isHealerKey) {
-                tmpEmbed.fields.push({ name: HEALER_ICON, value: `<@${user.id}>${KEY_ICON}`, inline: true });
-            } else {
-                tmpEmbed.fields.push({ name: HEALER_ICON, value: `<@${user.id}>`, inline: true });
-            }
-        case 'tank':
-            if (advertise._isTankKey) {
-                tmpEmbed.fields.push({ name: TANK_ICON, value: `<@${user.id}>${KEY_ICON}`, inline: true });
-            } else {
-                tmpEmbed.fields.push({ name: TANK_ICON, value: `<@${user.id}>`, inline: true });
-            }
-        default:
-            break;
+    if(role == 'dps'){
+        if (advertise._isDpsKey) {
+            tmpEmbed.fields.push({ name: DPS_ICON, value: `<@${user.id}>${KEY_ICON}`, inline: true });
+        } else {
+            tmpEmbed.fields.push({ name: DPS_ICON, value: `<@${user.id}>`, inline: true });
+        }
+    }else if (role == 'dps2'){
+        if (advertise._isDps2Key) {
+            tmpEmbed.fields.push({ name: DPS2_ICON, value: `<@${user.id}>${KEY_ICON}`, inline: true });
+        } else {
+            tmpEmbed.fields.push({ name: DPS2_ICON, value: `<@${user.id}>`, inline: true });
+        }
+    } else if (role == 'healer') {
+        if (advertise._isHealerKey) {
+            tmpEmbed.fields.push({ name: HEALER_ICON, value: `<@${user.id}>${KEY_ICON}`, inline: true });
+        } else {
+            tmpEmbed.fields.push({ name: HEALER_ICON, value: `<@${user.id}>`, inline: true });
+        }
+    } else if (role == 'tank') {
+        if (advertise._isTankKey) {
+            tmpEmbed.fields.push({ name: TANK_ICON, value: `<@${user.id}>${KEY_ICON}`, inline: true });
+        } else {
+            tmpEmbed.fields.push({ name: TANK_ICON, value: `<@${user.id}>`, inline: true });
+        }
     }
 
     return tmpEmbed;
@@ -807,33 +891,30 @@ function removeMessageField(advertise, user, role){
     // Which message field will be deleting
     let temp = new Discord.MessageEmbed().fields;
 
-    switch (role) {
-        case 'dps':
-            if (advertise._isDpsKey) {
-                temp.push({ name: DPS_ICON, value: `<@${user.id}>${KEY_ICON}`, inline: true });
-            } else {
-                temp.push({ name: DPS_ICON, value: `<@${user.id}>`, inline: true });
-            }
-        case 'dps2':
-            if (advertise._isDps2Key) {
-                temp.push({ name: DPS2_ICON, value: `<@${user.id}>${KEY_ICON}`, inline: true });
-            } else {
-                temp.push({ name: DPS2_ICON, value: `<@${user.id}>`, inline: true });
-            }
-        case 'healer':
-            if (advertise._isHealerKey) {
-                temp.push({ name: HEALER_ICON, value: `<@${user.id}>${KEY_ICON}`, inline: true });
-            } else {
-                temp.push({ name: HEALER_ICON, value: `<@${user.id}>`, inline: true });
-            }
-        case 'tank':
-            if (advertise._isTankKey) {
-                temp.push({ name: TANK_ICON, value: `<@${user.id}>${KEY_ICON}`, inline: true });
-            } else {
-                temp.push({ name: TANK_ICON, value: `<@${user.id}>`, inline: true });
-            }
-        default:
-            break;
+    if (role == 'dps'){
+        if (advertise._isDpsKey) {
+            temp.push({ name: DPS_ICON, value: `<@${user.id}>${KEY_ICON}`, inline: true });
+        } else {
+            temp.push({ name: DPS_ICON, value: `<@${user.id}>`, inline: true });
+        }
+    } else if (role == 'dps2') {
+        if (advertise._isDps2Key) {
+            temp.push({ name: DPS2_ICON, value: `<@${user.id}>${KEY_ICON}`, inline: true });
+        } else {
+            temp.push({ name: DPS2_ICON, value: `<@${user.id}>`, inline: true });
+        }
+    } else if (role == 'healer') {
+        if (advertise._isHealerKey) {
+            temp.push({ name: HEALER_ICON, value: `<@${user.id}>${KEY_ICON}`, inline: true });
+        } else {
+            temp.push({ name: HEALER_ICON, value: `<@${user.id}>`, inline: true });
+        }
+    } else if (role == 'tank') {
+        if (advertise._isTankKey) {
+            temp.push({ name: TANK_ICON, value: `<@${user.id}>${KEY_ICON}`, inline: true });
+        } else {
+            temp.push({ name: TANK_ICON, value: `<@${user.id}>`, inline: true });
+        }
     }
 
     // Remove field(temp) from current message
@@ -849,7 +930,7 @@ function removeMessageField(advertise, user, role){
 
 async function removeDps(advertise, user) {
     if (advertise._dpsUsers.includes(user)) {
-        if (advertise._dpsBoosters.length == 1) {
+        if (advertise._dpsBoosters.length >= 1) {
             let tmpEmbed = removeMessageField(advertise, user, 'dps');
 
             // New modified message
@@ -900,7 +981,7 @@ async function removeDps(advertise, user) {
 
 async function removeTank(advertise, user) {
     if (advertise._tankUsers.includes(user)) {
-        if (advertise._tankBoosters.length == 1) {
+        if (advertise._tankBoosters.length >= 1) {
             let tmpEmbed = removeMessageField(advertise, user, 'tank');
 
             // New modified message
@@ -962,7 +1043,7 @@ async function removeTank(advertise, user) {
 
 async function removeHealer(advertise, user) {
     if (advertise._healerUsers.includes(user)) {
-        if (advertise._healerBoosters.length == 1) {
+        if (advertise._healerBoosters.length >= 1) {
             let tmpEmbed = removeMessageField(advertise, user, 'healer');
 
             // New modified message
@@ -1022,7 +1103,7 @@ async function removeHealer(advertise, user) {
 
 async function removeDps2(advertise, user) {
     if (advertise._dps2Users.includes(user)) {
-        if (advertise._dps2Boosters.length == 1) {
+        if (advertise._dps2Boosters.length >= 1) {
             let tmpEmbed = removeMessageField(advertise, user, 'dps2');
 
             // New modified message
@@ -1081,38 +1162,37 @@ function replaceMessageField(advertise, user, role){
     let tmpMsg = advertise._message.embeds[0];
     let tmpEmbed = new Discord.MessageEmbed(tmpMsg);
     
-    switch (role) {
-        case 'dps':
-            for (let i = 10; i < tmpEmbed.fields.length; i++) {
-                if (tmpEmbed.fields[i].value == `<@${user.id}>`) {
-                    tmpEmbed.fields.splice(i, 1, { name: DPS_ICON, value: `<@${user.id}>${KEY_ICON}`, inline: true });
-                    i--;
-                }
+    if(role == 'dps'){
+        for (let i = 10; i < tmpEmbed.fields.length; i++) {
+            if (tmpEmbed.fields[i].value == `<@${user.id}>`) {
+                tmpEmbed.fields.splice(i, 1, { name: DPS_ICON, value: `<@${user.id}>${KEY_ICON}`, inline: true });
+                i--;
             }
-        case 'dps2':
-            for (let i = 10; i < tmpEmbed.fields.length; i++) {
-                if (tmpEmbed.fields[i].value == `<@${user.id}>`) {
-                    tmpEmbed.fields.splice(i, 1, { name: DPS2_ICON, value: `<@${user.id}>${KEY_ICON}`, inline: true });
-                    i--;
-                }
+        }
+    } else if (role == 'dps2') {
+        for (let i = 10; i < tmpEmbed.fields.length; i++) {
+            if (tmpEmbed.fields[i].value == `<@${user.id}>`) {
+                tmpEmbed.fields.splice(i, 1, { name: DPS2_ICON, value: `<@${user.id}>${KEY_ICON}`, inline: true });
+                i--;
             }
-        case 'healer':
-            for (let i = 10; i < tmpEmbed.fields.length; i++) {
-                if (tmpEmbed.fields[i].value == `<@${user.id}>`) {
-                    tmpEmbed.fields.splice(i, 1, { name: HEALER_ICON, value: `<@${user.id}>${KEY_ICON}`, inline: true });
-                    i--;
-                }
+        }
+    } else if (role == 'healer') {
+        for (let i = 10; i < tmpEmbed.fields.length; i++) {
+            if (tmpEmbed.fields[i].value == `<@${user.id}>`) {
+                tmpEmbed.fields.splice(i, 1, { name: HEALER_ICON, value: `<@${user.id}>${KEY_ICON}`, inline: true });
+                i--;
             }
-        case 'tank':
-            for (let i = 10; i < tmpEmbed.fields.length; i++) {
-                if (tmpEmbed.fields[i].value == `<@${user.id}>`) {
-                    tmpEmbed.fields.splice(i, 1, { name: TANK_ICON, value: `<@${user.id}>${KEY_ICON}`, inline: true });
-                    i--;
-                }
+        }
+    } else if (role == 'tank') {
+        for (let i = 10; i < tmpEmbed.fields.length; i++) {
+            if (tmpEmbed.fields[i].value == `<@${user.id}>`) {
+                tmpEmbed.fields.splice(i, 1, { name: TANK_ICON, value: `<@${user.id}>${KEY_ICON}`, inline: true });
+                i--;
             }
-        default:
-            break;
+        }
     }
+
+    return tmpEmbed;
 }
 
 async function dpsReplace(advertise, user){
