@@ -1418,17 +1418,21 @@ client.on('messageReactionAdd', async (reaction, user) => {
             if(!currAdv._isFull && !currAdv._isCanceled && !currAdv.isComplete){
                 if (currAdv._stack == ARMOR_STACK.NONE) {
                     var role = reaction.message.guild.roles.cache.find(r => r.name == NONE_STACK.replace(nonDigits, ''));
+                    var hasRole = role.members.find(m => m.id == user.id);
                 }else if (currAdv._stack == ARMOR_STACK.CLOTH){
                     var role = reaction.message.guild.roles.cache.find(r => r.name == CLOTH_STACK.replace(nonDigits, ''));
+                    var hasRole = role.members.find(m => m.id == user.id);
                 }else if (currAdv._stack == ARMOR_STACK.LEATHER){
                     var role = reaction.message.guild.roles.cache.find(r => r.name == LEATHER_STACK.replace(nonDigits, ''));
+                    var hasRole = role.members.find(m => m.id == user.id);
                 } else if (currAdv._stack == ARMOR_STACK.PLATE) {
                     var role = reaction.message.guild.roles.cache.find(r => r.id == PLATE_STACK.replace(nonDigits, ''));
+                    var hasRole = role.members.find(m => m.id == user.id);
                 }else if (currAdv._stack == ARMOR_STACK.MAIL){
                     var role = reaction.message.guild.roles.cache.find(r => r.name == MAIL_STACK.replace(nonDigits, ''));
+                    var hasRole = role.members.find(m => m.id == user.id);
                 }
-                let hasRole = role.members.find(m => m.id == user.id);
-
+                
                 if (hasRole) {
                     // Dps Queue
                     if (reaction.emoji.id === DPS_ICON.replace(nonDigits, '')) {
