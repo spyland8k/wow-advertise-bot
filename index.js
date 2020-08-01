@@ -1413,26 +1413,139 @@ client.on('messageReactionAdd', async (reaction, user) => {
     if ((!user.bot && currAdv) && (reaction.message.channel.id == WEBHOOK_TO)) {
         // Find which advertise reacted
         if (currAdv) {
+            // If reacted user is a Advertiser, then access
+            if (currAdv._advertiser == user) {
+                let boosterSize = currAdv._dpsBoosters.length;
+                boosterSize += currAdv._dps2Boosters.length;
+                boosterSize += currAdv._tankBoosters.length;
+                boosterSize += currAdv._healerBoosters.length;
+
+                // Advertise should be 4 boosters
+                // When DONE button reacted, 
+                // Remove all role emojis and change adv. FULL=true
+                if (reaction.emoji.id === DONE_ICON.replace(nonDigits, '') && !currAdv._isFull && (boosterSize == 4)) {
+                    currAdv._isFull = true;
+
+                    // edit message content
+                    let tempMsg = currAdv._message.embeds[0];
+                    tempMsg.setColor('#00e600');
+                    tempMsg.setTitle('Boosting Started!');
+                    tempMsg.setThumbnail('https://i.ibb.co/6PwpzFd/big-done.png');
+                    tempMsg.setDescription(`**The boosting has been started by <@${user.id}> at ${new Date().toLocaleString()}!**`);
+                    await currAdv._message.edit(tempMsg);
+
+                    // Update related row at sheet
+                    await updateBoostRow(currAdv);
+
+                    let reactions = await currAdv._message.reactions;
+                    let rec = await reactions.cache.map(reac => reac);
+
+                    await rec.forEach(r => {
+                        // Don't delete Done, RunFinish and Cancel Emojis
+                        if (!(r.emoji.id == DONE_ICON.replace(nonDigits, '')) && !(r.emoji.id == FINISH_ICON.replace(nonDigits, '')) && !(r.emoji.id == CANCEL_ICON.replace(nonDigits, ''))) {
+                            r.remove();
+                        }
+                    });
+                    currAdv._message.react(FINISH_ICON.replace(nonDigits, ''));
+                    let newMsg = new Discord.MessageEmbed();
+
+                    newMsg.setDescription(`<@${currAdv._advertiser.id}> owner of boosting started, Good luck!
+                        ${DPS_ICON}<@${currAdv._dpsBoosters[0].id}>, ${DPS2_ICON}<@${currAdv._dps2Boosters[0].id}>, ${HEALER_ICON}<@${currAdv._healerBoosters[0].id}>, ${TANK_ICON}<@${currAdv._tankBoosters[0].id}>`
+                        + "```\\w " + currAdv._message.embeds[0].field[9].value + " inv```");
+
+                    await client.channels.cache.get(WEBHOOK_TO).send(newMsg);
+                }
+                // When CANCELED button reacted, Change advertise content then
+                // Remove all another emojis and change adv. status CANCELED=true
+                if (reaction.emoji.id === CANCEL_ICON.replace(nonDigits, '') && !currAdv._isCanceled) {
+                    currAdv._isCanceled = true;
+
+                    // Update related row at sheet
+                    await updateBoostRow(currAdv);
+
+                    // edit message content
+                    let tempMsg = currAdv._message.embeds[0];
+                    tempMsg.fields = [];
+                    tempMsg.setColor('#ff0000');
+                    tempMsg.setTitle('Boosting Canceled!');
+                    tempMsg.setThumbnail('https://i.ibb.co/gyXFgmC/big-cancel.png');
+                    tempMsg.setDescription(`The boosting has been canceled by <@${user.id}>`);
+                    await currAdv._message.edit(tempMsg);
+
+                    let reactions = await currAdv._message.reactions;
+                    let rec = await reactions.cache.map(reac => reac);
+                    await rec.forEach(r => {
+                        // Don't delete Cancel Emoji
+                        if (!(r.emoji.id == CANCEL_ICON.replace(nonDigits, ''))) {
+                            r.remove();
+                        }
+                    });
+                }
+                // When FINISHED button reacted, 
+                // Remove all another emojis and change adv. status COMPLETED=true
+                if (reaction.emoji.id === FINISH_ICON.replace(nonDigits, '') && !currAdv._isCompleted) {
+                    currAdv._isCompleted = true;
+
+                    // Update related row at sheet
+                    await updateBoostRow(currAdv);
+
+                    // Balances added to the booster users
+                    const total = currAdv._message.embeds[0].fields[6].value;
+                    const advertiserPrice = Math.round((parseInt(total) * ADVERTISER_CUT));
+                    const boosterPrice = Math.round((parseInt(total) * BOOSTER_CUT));
+
+                    // Advertise Cut
+                    await depositBalance(currAdv._advertiser, advertiserPrice);
+                    // Booster Cuts
+                    await depositBalance(currAdv._dpsBoosters[0], boosterPrice);
+                    await depositBalance(currAdv._dps2Boosters[0], boosterPrice);
+                    await depositBalance(currAdv._healerBoosters[0], boosterPrice);
+                    await depositBalance(currAdv._tankBoosters[0], boosterPrice);
+
+                    // Edit message content
+                    let tempMsg = currAdv._message.embeds[0];
+                    tempMsg.setColor('#03fcad');
+                    tempMsg.setTitle('Boosting Completed!');
+                    tempMsg.setThumbnail('https://i.ibb.co/d6q1b40/runfinish.png');
+                    tempMsg.setDescription(`The boosting has been completed, approved by <@${user.id}> at ${new Date().toLocaleString()}`);
+                    await currAdv._message.edit(tempMsg);
+
+                    let reactions = await currAdv._message.reactions;
+                    let rec = await reactions.cache.map(reac => reac);
+
+                    await rec.forEach(r => {
+                        if (!(r.emoji.id == FINISH_ICON.replace(nonDigits, ''))) {
+                            r.remove();
+                        }
+                    });
+
+                    console.log(`${currAdv._message.id} is completed, balances will be added soon. You can check your balance`);
+                }
+            }   
             // If is advertise isnt full then catch reactions
             // Boosters can react those
             if(!currAdv._isFull && !currAdv._isCanceled && !currAdv.isComplete){
-                if (currAdv._stack == ARMOR_STACK.NONE) {
-                    var role = reaction.message.guild.roles.cache.find(r => r.name == NONE_STACK.replace(nonDigits, ''));
-                    var hasRole = role.members.find(m => m.id == user.id);
-                }else if (currAdv._stack == ARMOR_STACK.CLOTH){
-                    var role = reaction.message.guild.roles.cache.find(r => r.name == CLOTH_STACK.replace(nonDigits, ''));
-                    var hasRole = role.members.find(m => m.id == user.id);
-                }else if (currAdv._stack == ARMOR_STACK.LEATHER){
-                    var role = reaction.message.guild.roles.cache.find(r => r.name == LEATHER_STACK.replace(nonDigits, ''));
-                    var hasRole = role.members.find(m => m.id == user.id);
-                } else if (currAdv._stack == ARMOR_STACK.PLATE) {
-                    var role = reaction.message.guild.roles.cache.find(r => r.id == PLATE_STACK.replace(nonDigits, ''));
-                    var hasRole = role.members.find(m => m.id == user.id);
-                }else if (currAdv._stack == ARMOR_STACK.MAIL){
-                    var role = reaction.message.guild.roles.cache.find(r => r.name == MAIL_STACK.replace(nonDigits, ''));
-                    var hasRole = role.members.find(m => m.id == user.id);
+                try {
+                    if (currAdv._stack == ARMOR_STACK.NONE) {
+                        var role = reaction.message.guild.roles.cache.find(r => r.name == NONE_STACK.replace(nonDigits, ''));
+                        var hasRole = role.members.find(m => m.id == user.id);
+                    } else if (currAdv._stack == ARMOR_STACK.CLOTH) {
+                        var role = reaction.message.guild.roles.cache.find(r => r.name == CLOTH_STACK.replace(nonDigits, ''));
+                        var hasRole = role.members.find(m => m.id == user.id);
+                    } else if (currAdv._stack == ARMOR_STACK.LEATHER) {
+                        var role = reaction.message.guild.roles.cache.find(r => r.name == LEATHER_STACK.replace(nonDigits, ''));
+                        var hasRole = role.members.find(m => m.id == user.id);
+                    } else if (currAdv._stack == ARMOR_STACK.PLATE) {
+                        var role = reaction.message.guild.roles.cache.find(r => r.id == PLATE_STACK.replace(nonDigits, ''));
+                        var hasRole = role.members.find(m => m.id == user.id);
+                    } else if (currAdv._stack == ARMOR_STACK.MAIL) {
+                        var role = reaction.message.guild.roles.cache.find(r => r.name == MAIL_STACK.replace(nonDigits, ''));
+                        var hasRole = role.members.find(m => m.id == user.id);
+                    }
+                } catch (error) {
+                    console.log(`Error occured at find Advertise Stack type`);
                 }
-                
+
                 if (hasRole) {
                     // Dps Queue
                     if (reaction.emoji.id === DPS_ICON.replace(nonDigits, '')) {
@@ -1574,115 +1687,7 @@ client.on('messageReactionAdd', async (reaction, user) => {
                 console.log(`Advertise cannot reactable! It can be Full, Canceled or Completed!`);
             }
 
-            // If reacted user is a Advertiser, then access
-            if (currAdv._advertiser == user) {
-                let boosterSize = currAdv._dpsBoosters.length;
-                boosterSize += currAdv._dps2Boosters.length;
-                boosterSize += currAdv._tankBoosters.length;
-                boosterSize += currAdv._healerBoosters.length;
-
-                // Advertise should be 4 boosters
-                // When DONE button reacted, 
-                // Remove all role emojis and change adv. FULL=true
-                if (reaction.emoji.id === DONE_ICON.replace(nonDigits, '') && !currAdv._isFull && (boosterSize == 4)) {
-                    currAdv._isFull = true;
-
-                    // edit message content
-                    let tempMsg = currAdv._message.embeds[0];
-                    tempMsg.setColor('#00e600');
-                    tempMsg.setTitle('Boosting Started!');
-                    tempMsg.setThumbnail('https://i.ibb.co/6PwpzFd/big-done.png');
-                    tempMsg.setDescription(`**The boosting has been started by <@${user.id}> at ${new Date().toLocaleString()}!**`);
-                    await currAdv._message.edit(tempMsg);
-
-                    // Update related row at sheet
-                    await updateBoostRow(currAdv);
-
-                    let reactions = await currAdv._message.reactions;
-                    let rec = await reactions.cache.map(reac => reac);
-
-                    await rec.forEach(r => {
-                        // Don't delete Done, RunFinish and Cancel Emojis
-                        if (!(r.emoji.id == DONE_ICON.replace(nonDigits, '')) && !(r.emoji.id == FINISH_ICON.replace(nonDigits, '')) && !(r.emoji.id == CANCEL_ICON.replace(nonDigits, ''))) {
-                            r.remove();
-                        }
-                    });
-                    currAdv._message.react(FINISH_ICON.replace(nonDigits, ''));
-                    let newMsg = new Discord.MessageEmbed();
-
-                    newMsg.setDescription(`<@${currAdv._advertiser.id}> owner of boosting started, Good luck!
-                        ${DPS_ICON}<@${currAdv._dpsBoosters[0].id}>, ${DPS2_ICON}<@${currAdv._dps2Boosters[0].id}>, ${HEALER_ICON}<@${currAdv._healerBoosters[0].id}>, ${TANK_ICON}<@${currAdv._tankBoosters[0].id}>` 
-                        + "```\\w " + currAdv._message.embeds[0].field[9].value + " inv```");
-                    
-                    await client.channels.cache.get(WEBHOOK_TO).send(newMsg);
-                }
-                // When CANCELED button reacted, Change advertise content then
-                // Remove all another emojis and change adv. status CANCELED=true
-                if (reaction.emoji.id === CANCEL_ICON.replace(nonDigits, '') && !currAdv._isCanceled) {
-                    currAdv._isCanceled = true;
-
-                    // Update related row at sheet
-                    await updateBoostRow(currAdv);
-
-                    // edit message content
-                    let tempMsg = currAdv._message.embeds[0];
-                    tempMsg.fields = [];
-                    tempMsg.setColor('#ff0000');
-                    tempMsg.setTitle('Boosting Canceled!');
-                    tempMsg.setThumbnail('https://i.ibb.co/gyXFgmC/big-cancel.png');
-                    tempMsg.setDescription(`The boosting has been canceled by <@${user.id}>`);
-                    await currAdv._message.edit(tempMsg);
-
-                    let reactions = await currAdv._message.reactions;
-                    let rec = await reactions.cache.map(reac => reac);
-                    await rec.forEach(r => {
-                        // Don't delete Cancel Emoji
-                        if (!(r.emoji.id == CANCEL_ICON.replace(nonDigits, ''))) {
-                            r.remove();
-                        }
-                    });
-                }
-                // When FINISHED button reacted, 
-                // Remove all another emojis and change adv. status COMPLETED=true
-                if (reaction.emoji.id === FINISH_ICON.replace(nonDigits, '') && !currAdv._isCompleted) {
-                    currAdv._isCompleted = true;
-
-                    // Update related row at sheet
-                    await updateBoostRow(currAdv);
-                
-                    // Balances added to the booster users
-                    const total = currAdv._message.embeds[0].fields[6].value;
-                    const advertiserPrice = Math.round((parseInt(total) * ADVERTISER_CUT));
-                    const boosterPrice = Math.round((parseInt(total) * BOOSTER_CUT));
-
-                    // Advertise Cut
-                    await depositBalance(currAdv._advertiser, advertiserPrice);
-                    // Booster Cuts
-                    await depositBalance(currAdv._dpsBoosters[0], boosterPrice);
-                    await depositBalance(currAdv._dps2Boosters[0], boosterPrice);
-                    await depositBalance(currAdv._healerBoosters[0], boosterPrice);
-                    await depositBalance(currAdv._tankBoosters[0], boosterPrice);
-
-                    // Edit message content
-                    let tempMsg = currAdv._message.embeds[0];
-                    tempMsg.setColor('#03fcad');
-                    tempMsg.setTitle('Boosting Completed!');
-                    tempMsg.setThumbnail('https://i.ibb.co/d6q1b40/runfinish.png');
-                    tempMsg.setDescription(`The boosting has been completed, approved by <@${user.id}> at ${new Date().toLocaleString()}`);
-                    await currAdv._message.edit(tempMsg);
-
-                    let reactions = await currAdv._message.reactions;
-                    let rec = await reactions.cache.map(reac => reac);
-
-                    await rec.forEach(r => {
-                        if (!(r.emoji.id == FINISH_ICON.replace(nonDigits, ''))) {
-                            r.remove();
-                        }
-                    });
-
-                    console.log(`${currAdv._message.id} is completed, balances will be added soon. You can check your balance`);
-                }
-            }            
+                     
         } else {
             reaction.message.reply(`Advertise not registered! Please contact` + "```" + `${reaction.message.id}` + "```");
         }
