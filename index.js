@@ -124,6 +124,16 @@ var isAdvertiserHealer = Boolean(false);
 var isAdvertiserKey = Boolean(false);
 var advertiseStack = ARMOR_STACK.NONE;
 
+var log4js = require('log4js');
+log4js.configure({
+    appenders: [
+        { type: 'console' },
+        { type: 'file', filename: 'logs/error.log', category: 'consoleLog' }
+    ]
+});
+
+var logger = log4js.getLogger('consoleLog');
+
 async function newAdvertise(message, advertiser, isFull, isCompleted, isCanceled) {
     let dpsBoosters = Array();
     let dpsUsers = Array();
@@ -265,7 +275,8 @@ async function insertBoostRow(advertise){
         );
 
     } catch (error) {
-        console.log(`Error while insertBoostRow ${error}`)
+        console.log(`Error while insertBoostRow ${error}`);
+        logger.warn(`${error}`);
     }
 }
 
@@ -292,7 +303,8 @@ async function updateBoostRow(advertise){
             }
         }
     } catch (error) {
-        console.log(`Error while updateBoostRow ${error}`)
+        console.log(`Error while updateBoostRow ${error}`);
+        logger.warn(`${error}`);
     }
 
 
@@ -327,7 +339,8 @@ async function insertBoosterRow(user) {
             console.log(`Booster added to sheet ${user.tag}`);
         }
     } catch (error) {
-        console.log(`Error while insertNewBooster ${error}`)
+        console.log(`Error while insertNewBooster ${error}`);
+        logger.warn(`${error}`);
     }
 }
 
@@ -352,7 +365,8 @@ async function getBoosterBalance(user) {
             }
         }
     } catch (error) {
-        console.log(`Error while getBoosterBalance ${error}`)
+        console.log(`Error while getBoosterBalance ${error}`);
+        logger.warn(`${error}`);
     }
     console.log(`Spreadsheet booster balance end at ${new Date().toLocaleString()}`);
 
@@ -386,7 +400,8 @@ async function depositBalance(opUser, user, amount){
             }
         }
     } catch (error) {
-        console.log(`Error while addBoosterBalance ${user} - ${error}`)
+        console.log(`Error while addBoosterBalance ${user} - ${error}`);
+        logger.warn(`${error}`);
     }
 }
 
@@ -422,7 +437,8 @@ async function withdrawBalance(opUser, user, amount) {
             }
         }
     } catch (error) {
-        console.log(`Error while withdrawBalance ${user} - ${error}`)
+        console.log(`Error while withdrawBalance ${user} - ${error}`);
+        logger.warn(`${error}`);
     }
 }
 
@@ -552,6 +568,7 @@ client.on('ready', async () => {
         }
     } catch (error) {
         console.log(`ERROR while bot starting fetching old messages: ${error}`);
+        logger.warn(`${error}`);
     }
     
     console.log(`Bot loaded at ${new Date().toLocaleString()}`);
@@ -573,6 +590,7 @@ client.on('message', async message => {
             await client.channels.cache.get(WEBHOOK_TO).send(newEmbed);         
         } catch (error) {
             console.log("WEBHOOK POST ERROR: " + error);
+            logger.warn(`${error}`);
         }
     }
     // Modified webhooks, converting to the RichEmbed and filling inside
@@ -1544,6 +1562,7 @@ client.on('messageReactionAdd', async (reaction, user) => {
                     }
                 } catch (error) {
                     console.log(`Error occured at find Advertise Stack type`);
+                    logger.warn(`${error}`);
                 }
 
                 if (hasRole) {
