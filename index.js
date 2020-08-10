@@ -27,7 +27,7 @@ const ARMOR_STACK = {
     MAIL: "Mail Stacked"
 }
 
-// PRICE FIELD x*100
+// PRICE FIELD (AMOUNT)*100
 const BOOSTER_CUT = 0.175;
 const ADVERTISER_CUT = 0.25;
 
@@ -758,8 +758,7 @@ client.on('message', async message => {
 client.on('guildMemberUpdate', async member => {
     // Specific role which user get this role
     let boosterRoleId = "735230459650506772"; 
-    //var userRoles = member.roles.cache.find(r => r.id === roleId);
-
+    
     // if member in specific role take it otherwise skip
     let res = member.guild.roles.cache.get(boosterRoleId).members.get(member.id);
 
