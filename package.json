@@ -1,5 +1,5 @@
 {
-  "name": "discord-supporter-bot",
+  "name": "wow-advertise-bot",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
@@ -13,12 +13,14 @@
     "discord.js": "^12.2.0",
     "dotenv": "^8.2.0",
     "google-spreadsheet": "^3.0.11",
+    "log4js": "^6.3.0",
     "webhook-discord": "^3.7.5"
   },
   "devDependencies": {
     "discord.js": "^12.2.0",
     "dotenv": "^8.2.0",
     "google-spreadsheet": "^3.0.11",
+    "log4js": "^6.3.0",
     "webhook-discord": "^3.7.5"
   }
 }

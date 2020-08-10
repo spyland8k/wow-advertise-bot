@@ -4,9 +4,17 @@ require('dotenv').config();
 const Discord = require('discord.js');
 const { prefix, config } = require('./config.json');
 const { GoogleSpreadsheet } = require('google-spreadsheet');
+var log4js = require('log4js');
 const client = new Discord.Client({ partials: ['MESSAGE', 'CHANNEL', 'REACTION'] });
+
 // The spreadsheet ID from the url
 const doc = new GoogleSpreadsheet('1Gcxal2auntcl37JUir26PUpyeZCMJwkYzn3o24CEzsY');
+
+log4js.configure({
+    appenders: { operations: { type: "file", filename: "logs/error.log" } },
+    categories: { default: { appenders: ["operations"], level: "error" } }
+});
+const logger = log4js.getLogger("operations");
 
 // REGEX FIELD
 // Non-digits
@@ -17,6 +25,8 @@ const digits = /\d+/g;
 const wSpace = / +/;
 // Valid Discord Tag (Test#1234)
 const validTag = /([a-zA-Z0-9]+)?[#]([0-9]{4})+/g;
+
+const taggedUser = /<@!\d+>/g;
 
 // STACK ENUM FIELD
 const ARMOR_STACK = {
@@ -124,16 +134,6 @@ var isAdvertiserHealer = Boolean(false);
 var isAdvertiserKey = Boolean(false);
 var advertiseStack = ARMOR_STACK.NONE;
 
-var log4js = require('log4js');
-log4js.configure({
-    appenders: [
-        { type: 'console' },
-        { type: 'file', filename: 'logs/error.log', category: 'consoleLog' }
-    ]
-});
-
-var logger = log4js.getLogger('consoleLog');
-
 async function newAdvertise(message, advertiser, isFull, isCompleted, isCanceled) {
     let dpsBoosters = Array();
     let dpsUsers = Array();
@@ -153,6 +153,7 @@ async function newAdvertise(message, advertiser, isFull, isCompleted, isCanceled
     MessageList.push(adv);    
     return adv;
 }
+
 
 async function modifyWebhook(embed) {
     // Modify hooked message from webhook channel
@@ -695,10 +696,19 @@ client.on('message', async message => {
         const command = args.shift().toLowerCase();
         const opUser = message.author;
 
+        /*  ex: -balance {returns that user balance}
+            ex: -balance @discord#1234 {returns tagged user balance}
+        *   Checkout amount balance from specific user */
         if (command === 'balance') {
-            let balance = await getBoosterBalance(message.author);
-            message.author.send(`Your balance: **${balance}** ${GOLD_ICON}.\nIf you're think any wrong info, please contact support team.`);
-            //message.reply(`your balance: **${balance}** ${GOLD_ICON}`);
+            if (taggedUser.test(args[0])) {
+                // Return user with by ID
+                let user = await client.users.fetch(args[0].replace(nonDigits, ''));
+                let balance = await getBoosterBalance(user);
+                message.author.send(`${user} balance: **${balance}** ${GOLD_ICON}.\nIf you're think any wrong info, please contact support team.`);
+            } else {
+                let balance = await getBoosterBalance(message.author);
+                message.author.send(`Your balance: **${balance}** ${GOLD_ICON}.\nIf you're think any wrong info, please contact support team.`);
+            }
         }
         /*  ex: -withdraw @discord#1234 3152
         *   Checkout amount balance from specific user */
@@ -755,6 +765,7 @@ client.on('message', async message => {
     } 
 });
 
+// Guild member role changed
 client.on('guildMemberUpdate', async member => {
     // Specific role which user get this role
     let boosterRoleId = "735230459650506772"; 
@@ -1544,8 +1555,8 @@ client.on('messageReactionAdd', async (reaction, user) => {
             if(!currAdv._isFull && !currAdv._isCanceled && !currAdv.isComplete){
                 try {
                     if (currAdv._stack == ARMOR_STACK.NONE) {
-                        var role = reaction.message.guild.roles.cache.find(r => r.name == NONE_STACK.replace(nonDigits, ''));
-                        var hasRole = role.members.find(m => m.id == user.id);
+                        // Accepts everyone
+                        var hasRole = true;
                     } else if (currAdv._stack == ARMOR_STACK.CLOTH) {
                         var role = reaction.message.guild.roles.cache.find(r => r.name == CLOTH_STACK.replace(nonDigits, ''));
                         var hasRole = role.members.find(m => m.id == user.id);
@@ -1703,14 +1714,15 @@ client.on('messageReactionAdd', async (reaction, user) => {
             }
             else {
                 console.log(`Advertise cannot reactable! It can be Full, Canceled or Completed!`);
-            }
-
-                     
+                logger.info(`${currAdv._message.id} Advertise cannot reactable! It can be Full, Canceled or Completed!`);
+            }  
         } else {
             reaction.message.reply(`Advertise not registered! Please contact` + "```" + `${reaction.message.id}` + "```");
+            logger.info(`Advertise not registered! Please contact` + "```" + `${reaction.message.id}` + "```");
         }
     }
 });
+
 
 client.on('messageReactionRemove', async (reaction, user) => {
     var currAdv = await MessageList.find(x => x._message.id == reaction.message.id);
