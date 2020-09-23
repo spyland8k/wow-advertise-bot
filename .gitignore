@@ -1,5 +1,6 @@
-node_modules
-logs
--config.json
+.vscode
 .env
--client_secret.json
+.eslintrc.json
+logs
+node_modules
+credentials.json

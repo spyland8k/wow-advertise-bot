@@ -1,17 +1,19 @@
 {
   "name": "wow-advertise-bot",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node index.js"
   },
   "keywords": [],
-  "author": "",
+  "author": "spyland8k",
   "license": "ISC",
   "dependencies": {
     "discord.js": "^12.2.0",
     "dotenv": "^8.2.0",
+    "env-cmd": "^10.1.0",
     "google-spreadsheet": "^3.0.11",
     "log4js": "^6.3.0",
     "webhook-discord": "^3.7.5"
@@ -19,6 +21,7 @@
   "devDependencies": {
     "discord.js": "^12.2.0",
     "dotenv": "^8.2.0",
+    "env-cmd": "^10.1.0",
     "google-spreadsheet": "^3.0.11",
     "log4js": "^6.3.0",
     "webhook-discord": "^3.7.5"
